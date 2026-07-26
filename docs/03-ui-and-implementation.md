@@ -1,5 +1,7 @@
 # AgentSmith — UI & Implementation Guidance
 
+**Version:** 1.1
+
 ## Tech Stack (locked)
 
 - **Framework:** Next.js 15 (App Router) + TypeScript
@@ -7,48 +9,53 @@
 - **Database & Auth:** Supabase
 - **Styling:** Tailwind CSS + shadcn/ui
 - **Validation:** Zod
-- **Markdown rendering:** `react-markdown` (or equivalent)
+- **Markdown:** `react-markdown` (or equivalent)
 
 Do not introduce additional major dependencies unless clearly justified.
+
+---
+
+## Architecture reminder
+
+```
+API Routes / MCP  →  Services  →  Repositories  →  Database
+```
+
+Claim rules, status transitions, and activity logging belong in **Services**.
 
 ---
 
 ## Recommended Folder Structure
 
 ```
-apps/web/                  # or just root if single package
-├── app/
-│   ├── (auth)/
-│   │   ├── login/
-│   │   └── ...
-│   ├── (app)/
-│   │   ├── layout.tsx          # authenticated layout
-│   │   ├── page.tsx            # redirect or project list
-│   │   ├── projects/
-│   │   │   └── [slug]/
-│   │   │       ├── page.tsx    # Kanban board
-│   │   │       └── tickets/
-│   │   │           └── [id]/
-│   │   └── ...
-│   └── api/
-│       ├── projects/
-│       ├── tickets/
-│       └── ...
-├── components/
-│   ├── board/
-│   │   ├── KanbanBoard.tsx
-│   │   ├── TicketCard.tsx
-│   │   ├── TicketDetail.tsx
-│   │   └── CreateTicketDialog.tsx
-│   └── ui/                     # shadcn components
-├── lib/
-│   ├── supabase/
-│   │   ├── client.ts
-│   │   ├── server.ts
-│   │   └── middleware.ts
-│   ├── validations/            # Zod schemas
-│   └── mcp/                    # or separate package for MCP server
-└── ...
+app/
+├── (auth)/
+│   └── login/
+├── (app)/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── projects/
+│       └── [slug]/
+│           ├── page.tsx              # Kanban board
+│           └── tickets/[id]/
+└── api/
+    ├── projects/
+    └── tickets/
+components/
+├── board/
+│   ├── KanbanBoard.tsx
+│   ├── TicketCard.tsx
+│   ├── TicketDetail.tsx
+│   └── CreateTicketDialog.tsx
+└── ui/
+lib/
+├── supabase/
+│   ├── client.ts
+│   ├── server.ts
+│   └── middleware.ts
+├── services/          # claim, move, create, activity helpers
+├── repositories/
+└── validations/       # Zod schemas
 ```
 
 ---
@@ -56,84 +63,84 @@ apps/web/                  # or just root if single package
 ## UI Requirements (MVP)
 
 ### Board Page (`/projects/[slug]`)
-- Horizontal Kanban with 5 columns matching statuses.
-- Each column has a clear header + ticket count.
+- Horizontal Kanban with **5 columns**: Backlog, Open, In Progress, PR Review, Complete.
+- Column header + ticket count.
 - Ticket cards show:
-  - Title (truncated)
+  - Title
   - Type badge (Feature / Bug)
-  - Very short description preview (optional)
-  - Comment count indicator
-- Clicking a card opens a detail view (drawer or dedicated page).
-- Prominent “New Ticket” button.
-- Simple project switcher in the header.
+  - Agent / assignee indicator when claimed
+  - Comment count
+- Click card → detail (drawer or page).
+- Prominent **New Ticket** button.
+- Project switcher in header.
 
 ### Ticket Detail
-- Full title + description (rendered markdown).
+- Title + rendered markdown description.
 - Status + type badges.
-- Move-to-status controls (buttons or select).
-- Comment thread (newest at bottom or top — pick one and stay consistent).
-- Ability to edit description.
-- Field for `github_pr_url` (optional in first pass).
+- Claim button (when `open`) and move controls.
+- Ownership block: assignee, agent_name, harness_name, claimed_at, branch_name.
+- GitHub PR block (url, number, state) when present.
+- Comments thread.
+- Activity timeline (from `activity_log`).
+- Edit description / checklist.
 
 ### Create Ticket
-- Modal or dedicated simple form.
-- Fields: Title (required), Description, Type (Feature / Bug).
+- Modal or simple form: Title (required), Description, Type (Feature / Bug).
 - Defaults to current project.
-- On success → ticket appears in `backlog` or `open`.
+- On success → appears in `backlog` or `open`.
 
 ### Design Notes
-- Prefer a clean dark or light theme (support both if easy).
-- Use generous whitespace; avoid dense enterprise UI.
-- Loading and empty states must exist.
-- Mobile: basic responsiveness is enough (board can scroll horizontally).
+- Clean dark or light theme (both if easy).
+- Generous whitespace; avoid dense enterprise UI.
+- Loading and empty states required.
+- Mobile: basic responsiveness (horizontal scroll for board is fine).
 
 ---
 
 ## Implementation Order (strict)
 
-Follow this sequence. Do not jump ahead.
-
 ### Phase 1 – Foundation
-1. Create Supabase project and run the schema from `01-database-schema.md`.
-2. Scaffold Next.js app with TypeScript, Tailwind, shadcn/ui.
-3. Wire Supabase Auth (magic link + Google).
-4. Implement projects table + simple project list / switcher.
-5. Implement ticket create + list + detail + update + manual move.
-6. Build the basic Kanban board UI that reads from the API.
+1. Supabase project + schema from `01-database-schema.md`.
+2. Next.js App Router + TypeScript + Tailwind + shadcn/ui.
+3. Supabase Auth (magic link + Google).
+4. Projects (with GitHub binding fields) + switcher.
+5. Tickets CRUD + **claim** service/action.
+6. Activity log writes on create / claim / status change.
+7. Basic Kanban board UI (5 columns).
+8. Thin service layer for ticket operations.
 
 ### Phase 2 – Agent Surface
-1. Harden all API routes with Zod validation and clear errors.
-2. Add API-key authentication path for MCP.
-3. Implement the MCP server exposing the six tools defined in `02-mcp-and-api.md`.
-4. Test the full agent loop with at least one coding agent (Grok Build preferred).
+1. Harden API routes with Zod.
+2. MCP server with all tools including `claim_ticket`.
+3. API-key authentication for MCP.
+4. Comments + activity visible in detail view.
+5. Harness / agent fields visible on cards and detail.
+6. End-to-end test with Grok Build (or another agent).
 
-### Phase 3 – Minimal Polish
-1. Comments + system comments.
-2. `github_pr_url` field.
-3. Better empty / loading / error states.
-4. Seed a default project + a few sample tickets.
+### Phase 3 – GitHub Automation
+1. PR metadata population.
+2. Webhooks (opened → pr_review, merged → complete, closed → open).
+3. Optional worktree / branch helpers.
 
 ---
 
 ## Coding Standards for Agents
 
-- Prefer Server Components where possible; use Client Components only when interactivity is required.
-- Keep business logic in API routes or shared server utilities — not in React components.
-- All user-facing strings should be clear and concise.
-- Every MCP tool and API route must have TypeScript types and Zod schemas.
+- Prefer Server Components; Client Components only when interactivity is required.
+- Business logic in services, not React components or raw route handlers.
+- Every MCP tool and API route has TypeScript types + Zod schemas.
+- Clear error messages so agents can self-correct.
 - When in doubt, choose the simpler implementation.
 
 ---
 
 ## Out of Scope for First Implementation
 
-- Drag-and-drop (buttons to move are fine).
+- Drag-and-drop (buttons are fine).
 - Realtime subscriptions.
-- GitHub webhooks / automatic status changes.
+- GitHub webhooks / automatic status changes (Phase 3).
 - File attachments.
 - Sub-tickets / epics.
-- Custom statuses or workflows.
-- Notifications.
-- Analytics / dashboards.
-
-These can be added later on the same foundation.
+- Custom statuses.
+- Notifications / agent heartbeat.
+- Full membership RLS enforcement (table exists; policies can stay open for private MVP).
