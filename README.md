@@ -24,39 +24,47 @@ Stakeholder → Backlog → Open → Claim → In Progress → PR Review → Com
 - **Claim** is an action (not a column): only from `open`, atomic, sets ownership.
 - Local agents auth to AgentSmith MCP with a **personal API key** (acts as that user). Keys are for AgentSmith APIs, not GitHub. (Phase 2)
 
-## Quick start (Phase 1)
+## Quick start (local)
 
-### 1. Install
+### Prerequisites
+
+- Node.js 20+
+- Docker running
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
+
+### Run
 
 ```bash
 npm install
-cp .env.example .env.local
+npm run db:start    # Docker stack + apply migrations
+npm run db:env      # write .env.local from local keys
+npm run dev         # http://127.0.0.1:3000
 ```
 
-### 2. Supabase
+| Tool | URL |
+|------|-----|
+| App | http://127.0.0.1:3000 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| Mailpit (magic links) | http://127.0.0.1:54324 |
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. Copy **Project URL** and **anon key** into `.env.local`.
-3. Run the SQL in `supabase/migrations/001_initial.sql` (SQL Editor → New query → Run).
-4. Auth → URL configuration:
-   - Site URL: `http://localhost:3000`
-   - Redirect URLs: `http://localhost:3000/auth/callback`
-5. Enable **Email** (magic link) and optionally **Google** OAuth.
-6. Prefer **invite-only** / disable public signups for private MVP.
+Sign in with **magic link** — open Mailpit to click the email. Stop the DB with `npm run db:stop`.
 
-### 3. Run
+### Database changes
+
+See **[docs/database.md](./docs/database.md)** for the full workflow:
 
 ```bash
-npm run dev
+npm run db:new -- describe_change   # new migration file
+# edit supabase/migrations/<timestamp>_describe_change.sql
+npm run db:reset                    # reapply all migrations locally
+# PR → then on hosted: supabase link && npm run db:push
 ```
-
-Open [http://localhost:3000](http://localhost:3000), sign in, create tickets on the board.
 
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript
 - Vercel (target host)
-- Supabase (Postgres + Auth)
+- Supabase (Postgres + Auth) — local Docker for dev, hosted for deploy
 - Tailwind CSS + Radix UI primitives
 - Zod
 
@@ -68,9 +76,10 @@ See [docs/](./docs/) for the full Product Requirements Document and implementati
 - [01-database-schema.md](./docs/01-database-schema.md) — Supabase schema
 - [02-mcp-and-api.md](./docs/02-mcp-and-api.md) — MCP tools & API (includes claim)
 - [03-ui-and-implementation.md](./docs/03-ui-and-implementation.md) — UI & build order
+- [database.md](./docs/database.md) — local Supabase + migration workflow
 
 ## Status
 
-**Phase 1 in progress:** Next.js app, schema migration, service layer (create / claim / move / comments / activity), auth (magic link + Google), Kanban board, ticket detail.
+**Phase 1 in progress:** Next.js app, local Supabase, service layer (create / claim / move / comments / activity), auth, Kanban board, ticket detail.
 
 **Not yet:** MCP server, personal API keys UI (Phase 2), GitHub webhooks (Phase 3).

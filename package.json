@@ -6,7 +6,15 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:new": "supabase migration new",
+    "db:diff": "supabase db diff",
+    "db:push": "supabase db push",
+    "db:env": "bash scripts/write-local-env.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

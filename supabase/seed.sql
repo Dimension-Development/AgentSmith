@@ -1,0 +1,3 @@
+-- Optional seed data applied on `supabase db reset` (after migrations).
+-- Default project is inserted in the initial migration (on conflict do nothing).
+-- Add fixtures here as the app grows (sample tickets, etc.).
