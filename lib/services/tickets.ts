@@ -39,7 +39,12 @@ function mapTicket(row: Record<string, unknown>, commentCount?: number): Ticket 
   };
 }
 
-async function requireUserId(supabase: SupabaseClient): Promise<string> {
+/** Resolve actor: explicit userId (API key path) or session on the client. */
+async function requireUserId(
+  supabase: SupabaseClient,
+  userId?: string
+): Promise<string> {
+  if (userId) return userId;
   const {
     data: { user },
     error,
@@ -139,9 +144,10 @@ export async function createTicket(
     title: string;
     description?: string;
     type: TicketType;
-  }
+  },
+  actorUserId?: string
 ): Promise<Ticket> {
-  const userId = await requireUserId(supabase);
+  const userId = await requireUserId(supabase, actorUserId);
   await getProjectById(supabase, input.project_id);
 
   const { data, error } = await supabase
@@ -180,9 +186,10 @@ export async function claimTicket(
     agent_name?: string;
     agent_run_id?: string;
     harness_name?: string;
-  }
+  },
+  actorUserId?: string
 ): Promise<Ticket> {
-  const userId = await requireUserId(supabase);
+  const userId = await requireUserId(supabase, actorUserId);
 
   const { data: existing, error: loadError } = await supabase
     .from("tickets")
@@ -275,9 +282,10 @@ export async function claimTicket(
 
 export async function moveTicket(
   supabase: SupabaseClient,
-  input: { ticket_id: string; status: TicketStatus }
+  input: { ticket_id: string; status: TicketStatus },
+  actorUserId?: string
 ): Promise<Ticket> {
-  const userId = await requireUserId(supabase);
+  const userId = await requireUserId(supabase, actorUserId);
 
   const { data: existing, error: loadError } = await supabase
     .from("tickets")
@@ -382,9 +390,10 @@ export async function updateTicket(
     github_head_sha?: string | null;
     github_merge_commit_sha?: string | null;
     merged_at?: string | null;
-  }
+  },
+  actorUserId?: string
 ): Promise<Ticket> {
-  const userId = await requireUserId(supabase);
+  const userId = await requireUserId(supabase, actorUserId);
 
   const { data: existing, error: loadError } = await supabase
     .from("tickets")
@@ -482,9 +491,10 @@ export async function updateTicket(
 
 export async function addComment(
   supabase: SupabaseClient,
-  input: { ticket_id: string; body: string; is_system?: boolean }
+  input: { ticket_id: string; body: string; is_system?: boolean },
+  actorUserId?: string
 ): Promise<Comment> {
-  const userId = await requireUserId(supabase);
+  const userId = await requireUserId(supabase, actorUserId);
 
   const { data: ticket, error: loadError } = await supabase
     .from("tickets")

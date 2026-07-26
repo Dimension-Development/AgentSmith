@@ -38,6 +38,12 @@ export default async function AppLayout({
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-zinc-500">
+            <Link
+              href="/settings/api-keys"
+              className="hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              API keys
+            </Link>
             {user?.email && (
               <span className="hidden sm:inline truncate max-w-[200px]">
                 {user.email}

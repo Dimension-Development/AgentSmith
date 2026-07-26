@@ -83,8 +83,19 @@ See [docs/](./docs/) for the full Product Requirements Document and implementati
 - [03-ui-and-implementation.md](./docs/03-ui-and-implementation.md) — UI & build order
 - [database.md](./docs/database.md) — local Supabase + migration workflow
 
+## MCP (agents)
+
+1. Create a personal key under **API keys** in the app (`/settings/api-keys`).
+2. Point your agent at the stdio MCP server — see [docs/mcp.md](./docs/mcp.md).
+
+```bash
+export AGENTSMITH_API_URL=http://127.0.0.1:3000
+export AGENTSMITH_API_KEY=asm_…
+npm run mcp
+```
+
 ## Status
 
-**Phase 1 in progress:** Next.js app, local Supabase, service layer (create / claim / move / comments / activity), auth, Kanban board, ticket detail.
+**Phase 1 + 2 (local):** App, Supabase Docker, claim/move services, API keys, MCP stdio server.
 
-**Not yet:** MCP server, personal API keys UI (Phase 2), GitHub webhooks (Phase 3).
+**Not yet:** Hosted deploy hardening, GitHub webhooks (Phase 3).
