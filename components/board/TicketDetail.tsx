@@ -125,18 +125,18 @@ export function TicketDetail({
           <Badge variant="muted">{STATUS_LABELS[ticket.status]}</Badge>
           <a
             href={`/projects/${projectSlug}`}
-            className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="micro text-mute hover:text-bone"
           >
             ← Back to board
           </a>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="display text-[clamp(34px,5vw,60px)] normal-case">
           {ticket.title}
         </h1>
       </div>
 
       {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p className="micro border border-[rgba(226,114,74,.55)] bg-[rgba(226,114,74,.12)] px-3 py-2 text-alarm">
           {error}
         </p>
       )}
@@ -160,54 +160,54 @@ export function TicketDetail({
         ))}
       </section>
 
-      <section className="grid gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-2">
+      <section className="grid gap-6 border border-line bg-panel p-5 sm:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <h2 className="micro mb-3 text-mute-dim">
             Ownership
           </h2>
           <dl className="space-y-1 text-sm">
             <div className="flex justify-between gap-2">
-              <dt className="text-zinc-500">Assignee</dt>
-              <dd className="font-mono text-xs">
+              <dt className="micro text-mute-dim">Assignee</dt>
+              <dd className="font-mono text-xs text-bone-dim">
                 {ticket.assigned_to
                   ? ticket.assigned_to.slice(0, 8) + "…"
                   : "—"}
               </dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-zinc-500">Agent</dt>
+              <dt className="micro text-mute-dim">Agent</dt>
               <dd>{ticket.agent_name || "—"}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-zinc-500">Harness</dt>
+              <dt className="micro text-mute-dim">Harness</dt>
               <dd>{ticket.harness_name || "—"}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-zinc-500">Claimed</dt>
+              <dt className="micro text-mute-dim">Claimed</dt>
               <dd>{formatRelativeTime(ticket.claimed_at)}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-zinc-500">Branch</dt>
-              <dd className="font-mono text-xs">{ticket.branch_name || "—"}</dd>
+              <dt className="micro text-mute-dim">Branch</dt>
+              <dd className="font-mono text-xs text-bone-dim">{ticket.branch_name || "—"}</dd>
             </div>
           </dl>
         </div>
         <div>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <h2 className="micro mb-3 text-mute-dim">
             GitHub PR
           </h2>
           {ticket.github_pr_url || ticket.github_pr_number ? (
             <dl className="space-y-1 text-sm">
               <div className="flex justify-between gap-2">
-                <dt className="text-zinc-500">Number</dt>
+                <dt className="micro text-mute-dim">Number</dt>
                 <dd>#{ticket.github_pr_number ?? "—"}</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-zinc-500">State</dt>
+                <dt className="micro text-mute-dim">State</dt>
                 <dd>{ticket.github_pr_state || "—"}</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-zinc-500">Merged at</dt>
+                <dt className="micro text-mute-dim">Merged at</dt>
                 <dd>{formatRelativeTime(ticket.merged_at)}</dd>
               </div>
               {ticket.github_pr_url && (
@@ -215,21 +215,21 @@ export function TicketDetail({
                   href={ticket.github_pr_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-sm text-sky-600 hover:underline dark:text-sky-400"
+                  className="micro mt-2 inline-block text-teal hover:underline"
                 >
                   Open PR ↗
                 </a>
               )}
             </dl>
           ) : (
-            <p className="text-sm text-zinc-400">No PR linked yet</p>
+            <p className="text-sm text-mute-dim">No PR linked yet</p>
           )}
         </div>
       </section>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+          <h2 className="micro text-mute">
             Description
           </h2>
           {!editingDescription ? (
@@ -269,34 +269,34 @@ export function TicketDetail({
             rows={8}
           />
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="prose prose-sm max-w-none border border-line bg-panel p-4 text-bone-dim">
             {ticket.description ? (
               <ReactMarkdown>{ticket.description}</ReactMarkdown>
             ) : (
-              <p className="text-zinc-400">No description</p>
+              <p className="text-mute-dim">No description</p>
             )}
           </div>
         )}
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <h2 className="micro text-mute">
           Comments
         </h2>
         <ul className="space-y-3">
           {ticket.comments.length === 0 && (
-            <li className="text-sm text-zinc-400">No comments yet</li>
+            <li className="text-sm text-mute-dim">No comments yet</li>
           )}
           {ticket.comments.map((c) => (
             <li
               key={c.id}
-              className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+              className="border border-line bg-panel p-3"
             >
-              <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
+              <div className="micro mb-1 flex items-center justify-between text-mute-dim">
                 <span>{c.is_system ? "System" : "Comment"}</span>
                 <span>{formatRelativeTime(c.created_at)}</span>
               </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm max-w-none text-bone-dim">
                 <ReactMarkdown>{c.body}</ReactMarkdown>
               </div>
             </li>
@@ -316,18 +316,18 @@ export function TicketDetail({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <h2 className="micro text-mute">
           Activity
         </h2>
-        <ol className="space-y-2 border-l border-zinc-200 pl-4 dark:border-zinc-800">
+        <ol className="space-y-3 border-l border-line pl-4">
           {ticket.activity.length === 0 && (
-            <li className="text-sm text-zinc-400">No activity yet</li>
+            <li className="text-sm text-mute-dim">No activity yet</li>
           )}
           {ticket.activity.map((a) => (
             <li key={a.id} className="relative text-sm">
-              <span className="absolute -left-[1.3rem] top-1.5 h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-              <p className="text-zinc-800 dark:text-zinc-200">{a.message}</p>
-              <p className="text-xs text-zinc-400">
+              <span className="absolute -left-[1.3rem] top-1.5 h-2 w-2 rounded-full bg-mute-dim" />
+              <p className="text-bone-dim">{a.message}</p>
+              <p className="micro text-mute-dim">
                 {a.activity_type} · {formatRelativeTime(a.created_at)}
               </p>
             </li>

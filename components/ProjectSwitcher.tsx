@@ -14,7 +14,7 @@ export function ProjectSwitcher({
 
   return (
     <select
-      className="h-9 rounded-md border border-zinc-200 bg-transparent px-2 text-sm dark:border-zinc-700"
+      className="micro h-8 cursor-pointer border border-transparent bg-transparent px-1 text-bone transition-colors hover:border-line focus:border-line-strong focus:outline-none"
       value={currentSlug ?? projects[0]?.slug ?? ""}
       onChange={(e) => {
         if (e.target.value) {
@@ -24,7 +24,7 @@ export function ProjectSwitcher({
       aria-label="Project"
     >
       {projects.map((p) => (
-        <option key={p.id} value={p.slug}>
+        <option key={p.id} value={p.slug} className="bg-ink text-bone">
           {p.name}
         </option>
       ))}

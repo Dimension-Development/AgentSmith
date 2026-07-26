@@ -84,8 +84,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">AgentSmith</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="display text-5xl">AgentSmith</h1>
+          <p className="micro text-mute">
             Sign in to manage tickets and claims
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+        <p className="border border-line bg-panel px-3 py-2 text-xs text-mute">
           Local seed admin:{" "}
           <span className="font-mono">admin@agentsmith.local</span> /{" "}
           <span className="font-mono">admin123</span>
@@ -131,10 +131,10 @@ export default function LoginPage() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+            <span className="w-full border-t border-line" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950">
+            <span className="micro bg-ink px-2 text-mute-dim">
               Or
             </span>
           </div>
@@ -162,12 +162,12 @@ export default function LoginPage() {
         </div>
 
         {message && (
-          <p className="text-center text-sm text-emerald-600 dark:text-emerald-400">
+          <p className="micro text-center text-lime">
             {message}
           </p>
         )}
         {error && (
-          <p className="text-center text-sm text-red-600 dark:text-red-400">
+          <p className="micro text-center text-alarm">
             {error}
           </p>
         )}

@@ -78,61 +78,54 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+        <p className="micro border border-[rgba(226,114,74,.55)] bg-[rgba(226,114,74,.12)] px-3 py-2 text-alarm">
           {error}
         </p>
       )}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {TICKET_STATUSES.map((status) => {
-          const columnTickets = items.filter((t) => t.status === status);
-          return (
-            <section
-              key={status}
-              className={cn(
-                "flex w-72 shrink-0 flex-col rounded-xl bg-zinc-50/80 transition-colors dark:bg-zinc-900/50",
-                dragOver === status &&
-                  "bg-zinc-100 ring-2 ring-zinc-300 dark:bg-zinc-900 dark:ring-zinc-700"
-              )}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setDragOver(status);
-              }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      <div className="overflow-x-auto pb-4">
+        <div className="grid min-w-[1200px] grid-cols-5 gap-px border border-line bg-line backdrop-blur-xl">
+          {TICKET_STATUSES.map((status) => {
+            const columnTickets = items.filter((t) => t.status === status);
+            return (
+              <section
+                key={status}
+                className={cn(
+                  "flex flex-col gap-4 bg-[rgba(12,14,8,.55)] p-5 pb-6 transition-colors",
+                  dragOver === status && "bg-[rgba(28,32,16,.7)]"
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setDragOver(status);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setDragOver(null);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
                   setDragOver(null);
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(null);
-                try {
-                  const payload = JSON.parse(
-                    e.dataTransfer.getData("application/x-agentsmith-ticket")
-                  ) as DragPayload;
-                  if (payload?.ticketId) void handleDrop(payload, status);
-                } catch {
-                  // Foreign drag (text, file, …) — ignore.
-                }
-              }}
-            >
-              <header className="flex items-center justify-between px-3 py-3">
-                <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-                  {STATUS_LABELS[status]}
-                </h2>
-                <span className="rounded-full bg-zinc-200/80 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                  {columnTickets.length}
-                </span>
-              </header>
-              <div className="flex flex-1 flex-col gap-2 px-2 pb-3 min-h-[120px]">
-                {columnTickets.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-zinc-400">
-                    No tickets
-                  </p>
-                ) : (
-                  columnTickets.map((ticket) => (
+                  try {
+                    const payload = JSON.parse(
+                      e.dataTransfer.getData("application/x-agentsmith-ticket")
+                    ) as DragPayload;
+                    if (payload?.ticketId) void handleDrop(payload, status);
+                  } catch {
+                    // Foreign drag (text, file, …) — ignore.
+                  }
+                }}
+              >
+                <header className="micro flex items-center justify-between text-mute">
+                  <h2>{STATUS_LABELS[status]}</h2>
+                  <span className="text-mute-dim">
+                    {String(columnTickets.length).padStart(2, "0")}
+                  </span>
+                </header>
+                <div className="flex min-h-[120px] flex-1 flex-col gap-3">
+                  {columnTickets.map((ticket) => (
                     <div
                       key={ticket.id}
                       draggable
@@ -150,12 +143,17 @@ export function KanbanBoard({
                     >
                       <TicketCard ticket={ticket} projectSlug={projectSlug} />
                     </div>
-                  ))
-                )}
-              </div>
-            </section>
-          );
-        })}
+                  ))}
+                  {(columnTickets.length === 0 || dragOver === status) && (
+                    <div className="micro border border-dashed border-line px-4 py-6 text-center text-mute-dim">
+                      {dragOver === status ? "Drop a ticket here" : "Empty"}
+                    </div>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

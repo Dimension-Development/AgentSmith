@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+/** Phantom badges: outlined mono pills, colour = signal only. */
 export function Badge({
   className,
   children,
@@ -7,20 +8,17 @@ export function Badge({
 }: {
   className?: string;
   children: React.ReactNode;
-  variant?: "default" | "feature" | "bug" | "muted";
+  variant?: "default" | "feature" | "bug" | "muted" | "merged";
 }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        variant === "default" &&
-          "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
-        variant === "feature" &&
-          "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
-        variant === "bug" &&
-          "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200",
-        variant === "muted" &&
-          "bg-zinc-50 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400",
+        "micro inline-flex items-center rounded-full border px-2.5 py-[3px]",
+        variant === "default" && "border-line-strong text-bone",
+        variant === "feature" && "border-[rgba(198,214,138,.5)] text-olive",
+        variant === "bug" && "border-[rgba(240,180,92,.5)] text-amber",
+        variant === "muted" && "border-line text-mute",
+        variant === "merged" && "border-line-strong text-bone",
         className
       )}
     >

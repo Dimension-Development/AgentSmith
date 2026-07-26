@@ -26,8 +26,8 @@ export default async function RootPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16 space-y-4">
-      <h1 className="text-xl font-semibold">AgentSmith</h1>
-      <p className="text-sm text-zinc-500">
+      <h1 className="display text-5xl">AgentSmith</h1>
+      <p className="text-sm text-mute">
         No projects yet. Create one to get a board, then point it at the
         GitHub repo where the code lives.
       </p>
