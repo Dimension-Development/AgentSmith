@@ -109,6 +109,11 @@ npm run mcp
 
 ## Status
 
-**Phase 1 + 2 (local):** App, Supabase Docker, claim/move services, API keys, MCP stdio server.
+**Phase 1 + 2 complete, hardened:** App, Supabase Docker, transactional claim/move
+(Postgres functions), service-layer authorization with read-only RLS backstop, personal
+API keys, MCP over stdio **and** HTTP (`/api/mcp`), live board (Realtime), integration
+test suite (`npm run test`), hosted-deploy hardening (see
+[docs/database.md](./docs/database.md) deploy checklist).
 
-**Not yet:** Hosted deploy hardening, GitHub webhooks (Phase 3).
+**Not yet:** Hosted deploy itself, GitHub webhooks (Phase 3), project CRUD UI.
+Deferred polish is tracked in [docs/plans/06-product-polish.md](./docs/plans/06-product-polish.md).
