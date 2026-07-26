@@ -156,13 +156,5 @@ create policy "Authenticated users can manage activity_log"
   on public.activity_log for all to authenticated
   using (true) with check (true);
 
-insert into public.projects (name, slug, description, github_owner, github_repo, default_branch)
-values (
-  'Default',
-  'default',
-  'Primary project for AgentSmith',
-  'Dimension-Development',
-  'AgentSmith',
-  'main'
-)
-on conflict (slug) do nothing;
+-- Seed data (default project, admin user) lives in supabase/seed.sql —
+-- migrations must stay free of org-specific data.

@@ -121,6 +121,27 @@ Defined in `supabase/seed.sql`. **Local/dev only** — never reuse in production
 4. Keep **service role keys** out of the browser; only `NEXT_PUBLIC_*` is client-safe.  
 5. Hosted projects: disable public signup for private MVP (see PRD); local allows signup for convenience.
 
+## Hosted deploy checklist (Plan 04)
+
+Before pointing production traffic at a hosted Supabase project:
+
+1. **Auth → disable public signups.** Dashboard → Authentication → Sign In / Up →
+   turn **off** "Allow new users to sign up". Combined with `shouldCreateUser: false`
+   on the magic-link path, unknown emails can neither sign up nor be auto-created.
+   Google OAuth is covered by the same toggle (sign-in only for existing users).
+2. **Invites (MVP mechanism):** create users manually in Dashboard → Authentication →
+   Users → "Add user" (send invite). Membership roles come later (Plan 03 choke point).
+3. **Seed is local-only.** `supabase/seed.sql` (admin `admin@agentsmith.local` /
+   `admin123`, default project) is applied by `db:reset` locally. `supabase db push`
+   does **not** run it on hosted — never run it there manually either.
+4. **Redirect URLs:** add `https://<your-domain>/auth/callback` to
+   Authentication → URL Configuration (site URL + additional redirect URLs).
+5. **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   and `SUPABASE_SERVICE_ROLE_KEY` (server-only; `lib/supabase/admin.ts` imports
+   `server-only` so a client-side import fails the build).
+6. **Create the first project** via Studio SQL (insert into `public.projects`) — there
+   is no project CRUD UI yet, and the app shows an empty state until one exists.
+
 ## Troubleshooting
 
 | Symptom | Fix |

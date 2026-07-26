@@ -6,6 +6,12 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // API routes authenticate themselves (session cookie or Bearer API key) —
+  // skip the session refresh network hop here, it would run on every agent call.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return supabaseResponse;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -39,14 +45,12 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute =
     path.startsWith("/login") || path.startsWith("/auth");
-  // API routes authenticate themselves (session cookie or Bearer API key).
-  const isApiRoute = path.startsWith("/api/");
   const isPublicAsset =
     path.startsWith("/_next") ||
     path.startsWith("/favicon") ||
     path.includes(".");
 
-  if (!user && !isAuthRoute && !isApiRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isPublicAsset) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", path);

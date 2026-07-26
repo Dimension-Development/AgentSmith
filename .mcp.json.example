@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "agentsmith": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/AgentSmith/mcp/server.ts"],
+      "env": {
+        "AGENTSMITH_API_URL": "http://127.0.0.1:3000",
+        "AGENTSMITH_API_KEY": "asm_your_key_from_settings_api_keys"
+      }
+    }
+  }
+}

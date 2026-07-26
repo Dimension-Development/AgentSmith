@@ -14,8 +14,8 @@ export function errorResponse(error: unknown) {
       error.issues.map((i) => i.message).join("; ") || "Validation error";
     return NextResponse.json({ error: message }, { status: 400 });
   }
+  // Unexpected errors: log details server-side, never echo them to clients
+  // (raw Postgres/driver messages can leak schema and internals).
   console.error(error);
-  const message =
-    error instanceof Error ? error.message : "Internal server error";
-  return NextResponse.json({ error: message }, { status: 500 });
+  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
