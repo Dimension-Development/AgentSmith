@@ -96,6 +96,19 @@ scripts/
 
 ## Auth on local
 
+### Seed admin (password)
+
+After `npm run db:reset` (or a fresh `db:start` that applies seed), sign in with:
+
+| Field | Value |
+|-------|--------|
+| Email | `admin@agentsmith.local` |
+| Password | `admin123` |
+
+Defined in `supabase/seed.sql`. **Local/dev only** — never reuse in production.
+
+### Magic link / Google
+
 - Magic-link emails land in **Mailpit** (not your real inbox): http://127.0.0.1:54324  
 - Redirect URLs for the Next app are configured in `config.toml` (`site_url` + `additional_redirect_urls`).  
 - Email confirmations are **off** locally (`enable_confirmations = false`) for faster loops.

@@ -47,7 +47,12 @@ npm run dev         # http://127.0.0.1:3000
 | Supabase Studio | http://127.0.0.1:54323 |
 | Mailpit (magic links) | http://127.0.0.1:54324 |
 
-Sign in with **magic link** — open Mailpit to click the email. Stop the DB with `npm run db:stop`.
+Sign in with the seed admin (after `db:reset` / first start with seed):
+
+- **Email:** `admin@agentsmith.local`  
+- **Password:** `admin123`  
+
+Or use **magic link** and open Mailpit (http://127.0.0.1:54324). Stop the DB with `npm run db:stop`.
 
 ### Database changes
 

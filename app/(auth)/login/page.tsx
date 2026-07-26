@@ -1,19 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const [email, setEmail] = useState("admin@agentsmith.local");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function magicLink(e: React.FormEvent) {
+  async function passwordSignIn(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (authError) throw authError;
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function magicLink() {
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -26,7 +49,9 @@ export default function LoginPage() {
         },
       });
       if (authError) throw authError;
-      setMessage("Check your email for the magic link.");
+      setMessage(
+        "Magic link sent. Locally, open Mailpit at http://127.0.0.1:54324"
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {
@@ -62,7 +87,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={magicLink} className="space-y-4">
+        <form onSubmit={passwordSignIn} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -75,10 +100,31 @@ export default function LoginPage() {
               placeholder="you@company.com"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Sending…" : "Send magic link"}
+            {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
+
+        <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+          Local seed admin:{" "}
+          <span className="font-mono">admin@agentsmith.local</span> /{" "}
+          <span className="font-mono">admin123</span>
+          <br />
+          (created by <span className="font-mono">supabase/seed.sql</span> on{" "}
+          <span className="font-mono">db:reset</span>)
+        </p>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -91,15 +137,26 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={google}
-          disabled={loading}
-        >
-          Continue with Google
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={magicLink}
+            disabled={loading || !email}
+          >
+            Send magic link
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={google}
+            disabled={loading}
+          >
+            Continue with Google
+          </Button>
+        </div>
 
         {message && (
           <p className="text-center text-sm text-emerald-600 dark:text-emerald-400">
@@ -111,10 +168,6 @@ export default function LoginPage() {
             {error}
           </p>
         )}
-
-        <p className="text-center text-xs text-zinc-400">
-          Private / invite-only deployment. Configure providers in Supabase Auth.
-        </p>
       </div>
     </div>
   );
