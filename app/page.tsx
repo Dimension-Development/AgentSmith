@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listProjects } from "@/lib/services/projects";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { Button } from "@/components/ui/button";
 
 /**
  * Root entry: redirect authenticated users to their board.
@@ -26,16 +28,10 @@ export default async function RootPage() {
     <div className="mx-auto max-w-lg px-4 py-16 space-y-4">
       <h1 className="text-xl font-semibold">AgentSmith</h1>
       <p className="text-sm text-zinc-500">
-        No projects yet. Seed one locally with{" "}
-        <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-          npm run db:reset
-        </code>{" "}
-        or insert a row into{" "}
-        <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-          projects
-        </code>{" "}
-        via Supabase Studio, then refresh.
+        No projects yet. Create one to get a board, then point it at the
+        GitHub repo where the code lives.
       </p>
+      <CreateProjectDialog trigger={<Button>Create your first project</Button>} />
     </div>
   );
 }
