@@ -143,7 +143,7 @@ server.registerTool(
     inputSchema: {
       project_id: z.string().uuid(),
       title: z.string().min(1).max(200),
-      description: z.string().optional(),
+      description: z.string().max(20_000).optional(),
       type: z.enum(["feature", "bug"]),
     },
   },
@@ -167,9 +167,9 @@ server.registerTool(
       "Atomically claim an open ticket. Sets assignee to the API key owner and status to in_progress.",
     inputSchema: {
       ticket_id: z.string().uuid(),
-      agent_name: z.string().min(1),
-      agent_run_id: z.string().optional(),
-      harness_name: z.string().optional(),
+      agent_name: z.string().min(1).max(200),
+      agent_run_id: z.string().max(200).optional(),
+      harness_name: z.string().max(200).optional(),
     },
   },
   async (args) => {
@@ -196,22 +196,23 @@ server.registerTool(
       title: z.string().min(1).max(200).optional(),
       description: z.string().optional(),
       type: z.enum(["feature", "bug"]).optional(),
-      branch_name: z.string().nullable().optional(),
+      branch_name: z.string().max(200).nullable().optional(),
       checklist: z
         .array(
           z.object({
-            id: z.string(),
-            text: z.string(),
+            id: z.string().max(100),
+            text: z.string().max(500),
             done: z.boolean(),
           })
         )
+        .max(100)
         .optional(),
       github_pr_number: z.number().int().nullable().optional(),
-      github_pr_url: z.string().nullable().optional(),
-      github_pr_state: z.string().nullable().optional(),
-      github_head_sha: z.string().nullable().optional(),
-      github_merge_commit_sha: z.string().nullable().optional(),
-      merged_at: z.string().nullable().optional(),
+      github_pr_url: z.string().max(500).nullable().optional(),
+      github_pr_state: z.enum(["open", "closed", "merged"]).nullable().optional(),
+      github_head_sha: z.string().max(500).nullable().optional(),
+      github_merge_commit_sha: z.string().max(500).nullable().optional(),
+      merged_at: z.string().max(200).nullable().optional(),
     },
   },
   async (args) => {
@@ -234,7 +235,7 @@ server.registerTool(
     description: "Add a comment to a ticket (also writes activity_log).",
     inputSchema: {
       ticket_id: z.string().uuid(),
-      body: z.string().min(1),
+      body: z.string().min(1).max(10_000),
       is_system: z.boolean().optional(),
     },
   },

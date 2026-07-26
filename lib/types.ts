@@ -11,6 +11,22 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number];
 export const TICKET_TYPES = ["feature", "bug"] as const;
 export type TicketType = (typeof TICKET_TYPES)[number];
 
+export const ACTIVITY_TYPES = [
+  "ticket_created",
+  "ticket_updated",
+  "ticket_claimed",
+  "ticket_unclaimed",
+  "status_changed",
+  "comment_added",
+  "pr_linked",
+  "pr_merged",
+  "ticket_completed",
+] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+export const PR_STATES = ["open", "closed", "merged"] as const;
+export type PrState = (typeof PR_STATES)[number];
+
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   backlog: "Backlog",
   open: "Open",
@@ -76,7 +92,7 @@ export type Activity = {
   ticket_id: string;
   project_id: string;
   actor_id: string | null;
-  activity_type: string;
+  activity_type: ActivityType;
   message: string;
   metadata: Record<string, unknown>;
   created_at: string;

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Activity } from "@/lib/types";
+import type { Activity, ActivityType } from "@/lib/types";
 
 type LogActivityInput = {
   ticket_id: string;
   project_id: string;
   actor_id: string | null;
-  activity_type: string;
+  activity_type: ActivityType;
   message: string;
   metadata?: Record<string, unknown>;
 };

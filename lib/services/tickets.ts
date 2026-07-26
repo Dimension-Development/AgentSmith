@@ -76,8 +76,9 @@ export async function listTickets(
   let query = supabase
     .from("tickets")
     .select("*, comments(count)")
+    // created_at keeps card order stable; updated_at would reshuffle on every touch
     .eq("project_id", projectId!)
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (opts.status) {
     query = query.eq("status", opts.status);
@@ -179,6 +180,51 @@ export async function createTicket(
   return mapTicket(data as Record<string, unknown>);
 }
 
+/**
+ * Idempotent re-claim: keep the stored agent identity current for the new run,
+ * without writing a duplicate ticket_claimed activity.
+ */
+async function refreshAgentFields(
+  supabase: SupabaseClient,
+  existing: Record<string, unknown>,
+  input: {
+    ticket_id: string;
+    agent_name?: string;
+    agent_run_id?: string;
+    harness_name?: string;
+  }
+): Promise<Ticket> {
+  const patch: Record<string, unknown> = {};
+  if (input.agent_name !== undefined && input.agent_name !== existing.agent_name)
+    patch.agent_name = input.agent_name;
+  if (
+    input.agent_run_id !== undefined &&
+    input.agent_run_id !== existing.agent_run_id
+  )
+    patch.agent_run_id = input.agent_run_id;
+  if (
+    input.harness_name !== undefined &&
+    input.harness_name !== existing.harness_name
+  )
+    patch.harness_name = input.harness_name;
+
+  if (Object.keys(patch).length === 0) {
+    return mapTicket(existing);
+  }
+
+  const { data, error } = await supabase
+    .from("tickets")
+    .update(patch)
+    .eq("id", input.ticket_id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw new ServiceError(error.message, 500);
+  }
+  return mapTicket((data ?? existing) as Record<string, unknown>);
+}
+
 export async function claimTicket(
   supabase: SupabaseClient,
   input: {
@@ -209,7 +255,11 @@ export async function claimTicket(
     existing.assigned_to === userId &&
     existing.status === "in_progress"
   ) {
-    return mapTicket(existing as Record<string, unknown>);
+    return refreshAgentFields(
+      supabase,
+      existing as Record<string, unknown>,
+      input
+    );
   }
 
   if (existing.status !== "open") {
@@ -254,7 +304,11 @@ export async function claimTicket(
       again.assigned_to === userId &&
       again.status === "in_progress"
     ) {
-      return mapTicket(again as Record<string, unknown>);
+      return refreshAgentFields(
+        supabase,
+        again as Record<string, unknown>,
+        input
+      );
     }
     if (again?.assigned_to && again.assigned_to !== userId) {
       throw new ServiceError("Ticket already claimed", 409);

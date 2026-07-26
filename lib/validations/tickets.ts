@@ -1,18 +1,38 @@
 import { z } from "zod";
-import { TICKET_STATUSES, TICKET_TYPES } from "@/lib/types";
+import { PR_STATES, TICKET_STATUSES, TICKET_TYPES } from "@/lib/types";
+
+// Input size limits — agents can be chatty; keep payloads bounded.
+export const LIMITS = {
+  description: 20_000,
+  commentBody: 10_000,
+  checklistItems: 100,
+  checklistText: 500,
+  agentField: 200,
+  githubField: 500,
+} as const;
+
+export const checklistSchema = z
+  .array(
+    z.object({
+      id: z.string().max(100),
+      text: z.string().max(LIMITS.checklistText),
+      done: z.boolean(),
+    })
+  )
+  .max(LIMITS.checklistItems);
 
 export const createTicketSchema = z.object({
   project_id: z.string().uuid(),
   title: z.string().min(1).max(200),
-  description: z.string().optional().default(""),
+  description: z.string().max(LIMITS.description).optional().default(""),
   type: z.enum(TICKET_TYPES),
 });
 
 export const claimTicketSchema = z.object({
   ticket_id: z.string().uuid(),
-  agent_name: z.string().min(1).optional(),
-  agent_run_id: z.string().optional(),
-  harness_name: z.string().optional(),
+  agent_name: z.string().min(1).max(LIMITS.agentField).optional(),
+  agent_run_id: z.string().max(LIMITS.agentField).optional(),
+  harness_name: z.string().max(LIMITS.agentField).optional(),
 });
 
 export const moveTicketSchema = z.object({
@@ -23,29 +43,25 @@ export const moveTicketSchema = z.object({
 export const updateTicketSchema = z.object({
   ticket_id: z.string().uuid(),
   title: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
+  description: z.string().max(LIMITS.description).optional(),
   type: z.enum(TICKET_TYPES).optional(),
-  branch_name: z.string().nullable().optional(),
-  checklist: z
-    .array(
-      z.object({
-        id: z.string(),
-        text: z.string(),
-        done: z.boolean(),
-      })
-    )
-    .optional(),
+  branch_name: z.string().max(LIMITS.agentField).nullable().optional(),
+  checklist: checklistSchema.optional(),
   github_pr_number: z.number().int().nullable().optional(),
-  github_pr_url: z.string().nullable().optional(),
-  github_pr_state: z.string().nullable().optional(),
-  github_head_sha: z.string().nullable().optional(),
-  github_merge_commit_sha: z.string().nullable().optional(),
-  merged_at: z.string().nullable().optional(),
+  github_pr_url: z.string().max(LIMITS.githubField).nullable().optional(),
+  github_pr_state: z.enum(PR_STATES).nullable().optional(),
+  github_head_sha: z.string().max(LIMITS.githubField).nullable().optional(),
+  github_merge_commit_sha: z
+    .string()
+    .max(LIMITS.githubField)
+    .nullable()
+    .optional(),
+  merged_at: z.string().max(LIMITS.agentField).nullable().optional(),
 });
 
 export const addCommentSchema = z.object({
   ticket_id: z.string().uuid(),
-  body: z.string().min(1),
+  body: z.string().min(1).max(LIMITS.commentBody),
   is_system: z.boolean().optional().default(false),
 });
 
