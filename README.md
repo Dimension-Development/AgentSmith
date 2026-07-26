@@ -22,7 +22,56 @@ Stakeholder → Backlog → Open → Claim → In Progress → PR Review → Com
 
 - New tickets start in **backlog**; promote to **open** when ready for agents.
 - **Claim** is an action (not a column): only from `open`, atomic, sets ownership.
-- Local agents auth to AgentSmith MCP with a **personal API key** (acts as that user). Keys are for AgentSmith APIs, not GitHub.
+- Local agents auth to AgentSmith MCP with a **personal API key** (acts as that user). Keys are for AgentSmith APIs, not GitHub. (Phase 2)
+
+## Quick start (local)
+
+### Prerequisites
+
+- Node.js 20+
+- Docker running
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
+
+### Run
+
+```bash
+npm install
+npm run db:start    # Docker stack + apply migrations
+npm run db:env      # write .env.local from local keys
+npm run dev         # http://127.0.0.1:3000
+```
+
+| Tool | URL |
+|------|-----|
+| App | http://127.0.0.1:3000 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| Mailpit (magic links) | http://127.0.0.1:54324 |
+
+Sign in with the seed admin (after `db:reset` / first start with seed):
+
+- **Email:** `admin@agentsmith.local`  
+- **Password:** `admin123`  
+
+Or use **magic link** and open Mailpit (http://127.0.0.1:54324). Stop the DB with `npm run db:stop`.
+
+### Database changes
+
+See **[docs/database.md](./docs/database.md)** for the full workflow:
+
+```bash
+npm run db:new -- describe_change   # new migration file
+# edit supabase/migrations/<timestamp>_describe_change.sql
+npm run db:reset                    # reapply all migrations locally
+# PR → then on hosted: supabase link && npm run db:push
+```
+
+## Stack
+
+- Next.js 15 (App Router) + TypeScript
+- Vercel (target host)
+- Supabase (Postgres + Auth) — local Docker for dev, hosted for deploy
+- Tailwind CSS + Radix UI primitives
+- Zod
 
 ## Docs
 
@@ -32,15 +81,21 @@ See [docs/](./docs/) for the full Product Requirements Document and implementati
 - [01-database-schema.md](./docs/01-database-schema.md) — Supabase schema
 - [02-mcp-and-api.md](./docs/02-mcp-and-api.md) — MCP tools & API (includes claim)
 - [03-ui-and-implementation.md](./docs/03-ui-and-implementation.md) — UI & build order
+- [database.md](./docs/database.md) — local Supabase + migration workflow
 
-## Stack (planned)
+## MCP (agents)
 
-- Next.js 15 (App Router) + TypeScript
-- Vercel
-- Supabase (Postgres + Auth)
-- Tailwind + shadcn/ui
-- Zod
+1. Create a personal key under **API keys** in the app (`/settings/api-keys`).
+2. Point your agent at the stdio MCP server — see [docs/mcp.md](./docs/mcp.md).
+
+```bash
+export AGENTSMITH_API_URL=http://127.0.0.1:3000
+export AGENTSMITH_API_KEY=asm_…
+npm run mcp
+```
 
 ## Status
 
-PRD v1.2 complete (claim, auth, and lifecycle rules locked). Ready for Phase 1 implementation.
+**Phase 1 + 2 (local):** App, Supabase Docker, claim/move services, API keys, MCP stdio server.
+
+**Not yet:** Hosted deploy hardening, GitHub webhooks (Phase 3).
