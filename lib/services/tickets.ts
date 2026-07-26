@@ -10,6 +10,10 @@ import {
 } from "@/lib/types";
 import { logActivity, listActivityForTicket } from "@/lib/services/activity";
 import { getProjectById, getProjectBySlug } from "@/lib/services/projects";
+import {
+  requireProjectAccess,
+  requireTicketAccess,
+} from "@/lib/services/access";
 
 function mapTicket(row: Record<string, unknown>, commentCount?: number): Ticket {
   return {
@@ -150,6 +154,7 @@ export async function createTicket(
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
   await getProjectById(supabase, input.project_id);
+  await requireProjectAccess(supabase, userId, input.project_id);
 
   const { data, error } = await supabase
     .from("tickets")
@@ -208,6 +213,7 @@ export async function claimTicket(
   actorUserId?: string
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
+  await requireTicketAccess(supabase, userId, input.ticket_id);
 
   // Single transaction in Postgres: lock row, check claimability, set claim
   // fields, write ticket_claimed activity. Idempotent same-user re-claim.
@@ -232,6 +238,7 @@ export async function moveTicket(
   actorUserId?: string
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
+  await requireTicketAccess(supabase, userId, input.ticket_id);
 
   // Single transaction in Postgres: lock row, enforce guardrails, update
   // status (clearing claim fields when releasing), write all activity rows.
@@ -281,6 +288,8 @@ export async function updateTicket(
   if (!existing) {
     throw new ServiceError("Ticket not found", 404);
   }
+
+  await requireProjectAccess(supabase, userId, existing.project_id);
 
   const patch: Record<string, unknown> = {};
   if (input.title !== undefined) patch.title = input.title.trim();
@@ -382,6 +391,8 @@ export async function addComment(
   if (!ticket) {
     throw new ServiceError("Ticket not found", 404);
   }
+
+  await requireProjectAccess(supabase, userId, ticket.project_id);
 
   const { data, error } = await supabase
     .from("comments")

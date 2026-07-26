@@ -166,7 +166,8 @@ Planning may be recorded as a system activity / comment; it does not need its ow
 
 ### 7.1 Authentication
 - Supabase Auth (Magic Link + Google OAuth).
-- Simple role model for MVP: authenticated users can create, view, comment, claim, and move (open RLS among authenticated users).
+- Simple role model for MVP: authenticated users can create, view, comment, claim, and move.
+- **Authorization authority (post-v1.2 decision, Plan 03):** the **service layer** is the single enforcement point for who may act. Session and API-key requests both resolve to a `userId` and use the service-role client; `lib/services/access.ts` is the choke point where membership roles will be enforced. RLS is a read-only backstop (authenticated may read; direct table writes are blocked).
 - **Private / invite-only deployment** for MVP — do not leave public self-signup open in production.
 - Target model (document now, enforce later): `owner` | `developer` | `requester` | `viewer` via `project_members`.
 - **MCP:** personal API keys owned by a human user (Phase 2). Key acts as that user. Not GitHub credentials — agents need them to call AgentSmith list/claim/update APIs; git push alone does not update work state.

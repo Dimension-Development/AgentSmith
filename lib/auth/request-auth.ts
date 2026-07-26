@@ -12,8 +12,12 @@ export type RequestAuth = {
 
 /**
  * Resolve the caller from a Supabase cookie session or Bearer API key (`asm_…`).
- * API-key path uses the service-role client so RLS does not block agent actions;
- * `userId` is always the human owner of the key / session.
+ *
+ * Both paths return the ADMIN client for data access so session and API-key
+ * requests traverse identical service code; only identity provenance differs.
+ * Authorization is enforced in the service layer (lib/services/access.ts),
+ * with RLS as a read-only backstop. `userId` is always the human owner of the
+ * key / session.
  */
 export async function resolveRequestAuth(
   request: Request
@@ -30,18 +34,18 @@ export async function resolveRequestAuth(
     };
   }
 
-  const supabase = await createClient();
+  const sessionClient = await createClient();
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await sessionClient.auth.getUser();
 
   if (error || !user) {
     throw new ServiceError("Unauthorized", 401);
   }
 
   return {
-    supabase,
+    supabase: createAdminClient(),
     userId: user.id,
     via: "session",
   };

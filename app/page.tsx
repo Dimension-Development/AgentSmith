@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ensureDefaultProject, listProjects } from "@/lib/services/projects";
+import { listProjects } from "@/lib/services/projects";
 
 /**
  * Root entry: redirect authenticated users to their board.
@@ -17,30 +17,24 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  try {
-    const project = await ensureDefaultProject(supabase);
-    redirect(`/projects/${project.slug}`);
-  } catch {
-    const projects = await listProjects(supabase).catch(() => []);
-    if (projects[0]) {
-      redirect(`/projects/${projects[0].slug}`);
-    }
+  const projects = await listProjects(supabase).catch(() => []);
+  if (projects[0]) {
+    redirect(`/projects/${projects[0].slug}`);
   }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16 space-y-4">
       <h1 className="text-xl font-semibold">AgentSmith</h1>
       <p className="text-sm text-zinc-500">
-        Database not ready. Apply{" "}
+        No projects yet. Seed one locally with{" "}
         <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-          supabase/migrations/001_initial.sql
+          npm run db:reset
         </code>{" "}
-        in the Supabase SQL editor, set{" "}
+        or insert a row into{" "}
         <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-          .env.local
+          projects
         </code>{" "}
-        from <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">.env.example</code>, then
-        refresh.
+        via Supabase Studio, then refresh.
       </p>
     </div>
   );
