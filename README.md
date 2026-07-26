@@ -41,6 +41,12 @@ npm run db:env      # write .env.local from local keys
 npm run dev         # http://127.0.0.1:3000
 ```
 
+Run the integration tests (requires the local stack; REST smoke tests also want `npm run dev` running):
+
+```bash
+npm run test
+```
+
 | Tool | URL |
 |------|-----|
 | App | http://127.0.0.1:3000 |

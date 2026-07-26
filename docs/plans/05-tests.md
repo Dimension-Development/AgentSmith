@@ -19,56 +19,56 @@ claim/move invariants with integration tests against local Supabase.
 
 ## Setup tasks
 
-- [ ] Add `vitest` (+ `dotenv` loading of `.env.local`)
-- [ ] Test helper: admin client factory, `createTestUser()` (via
+- [x] Add `vitest` (+ `dotenv` loading of `.env.local`)
+- [x] Test helper: admin client factory, `createTestUser()` (via
       `auth.admin.createUser`), `createTestProject()`, per-suite cleanup (delete rows by
       test-run marker)
-- [ ] `npm run test` script; document "requires `npm run db:start`" in README
+- [x] `npm run test` script; document "requires `npm run db:start`" in README
 - [ ] CI note: defer GitHub Actions wiring until hosted deploy exists (track in Plan 06)
 
 ## Invariant suites
 
 ### Claim (PRD §8 — the headline metric)
 
-- [ ] Claim an `open` unassigned ticket → `in_progress`, claim fields set, exactly one
+- [x] Claim an `open` unassigned ticket → `in_progress`, claim fields set, exactly one
       `ticket_claimed` activity
-- [ ] **Parallel claims** (`Promise.all` × 5 users, one ticket) → exactly one winner;
+- [x] **Parallel claims** (`Promise.all` × 5 users, one ticket) → exactly one winner;
       losers get `409 Ticket already claimed`; exactly one claim activity row
-- [ ] Claim from `backlog` / `in_progress` / `complete` → `400 Ticket not claimable`
-- [ ] Idempotent re-claim (same user) → success, no duplicate activity, agent fields
+- [x] Claim from `backlog` / `in_progress` / `complete` → `400 Ticket not claimable`
+- [x] Idempotent re-claim (same user) → success, no duplicate activity, agent fields
       refreshed (Plan 01 §2)
-- [ ] Claim by user B on a ticket claimed by A → 409
+- [x] Claim by user B on a ticket claimed by A → 409
 
 ### Move
 
-- [ ] `open → in_progress` via move → 400 with "use claim_ticket" message
-- [ ] Move claimed ticket to `open` → claim fields cleared, `status_changed` **and**
+- [x] `open → in_progress` via move → 400 with "use claim_ticket" message
+- [x] Move claimed ticket to `open` → claim fields cleared, `status_changed` **and**
       `ticket_unclaimed` activities, `branch_name` preserved
-- [ ] Move to `backlog` → same unclaim behavior
-- [ ] Move to `complete` → `ticket_completed` activity, `merged_at` still null
-- [ ] Same-status move → no-op, no activity
-- [ ] Parallel conflicting moves → activity `from → to` chain is consistent
+- [x] Move to `backlog` → same unclaim behavior
+- [x] Move to `complete` → `ticket_completed` activity, `merged_at` still null
+- [x] Same-status move → no-op, no activity
+- [x] Parallel conflicting moves → activity `from → to` chain is consistent
 
 ### Update / PR metadata
 
-- [ ] Setting `github_pr_url` writes `pr_linked` activity
-- [ ] Setting `github_pr_state: "merged"` writes `pr_merged` activity
-- [ ] Invalid `github_pr_state` → 400 (Plan 01 §4)
-- [ ] Oversized description / checklist → 400 (Plan 01 §5)
+- [x] Setting `github_pr_url` writes `pr_linked` activity
+- [x] Setting `github_pr_state: "merged"` writes `pr_merged` activity
+- [x] Invalid `github_pr_state` → 400 (Plan 01 §4)
+- [x] Oversized description / checklist → 400 (Plan 01 §5)
 
 ### Comments & activity
 
-- [ ] `add_comment` writes comment + `comment_added` activity atomically
-- [ ] Activity exists iff mutation committed (force a failure: e.g. move nonexistent
+- [x] `add_comment` writes comment + `comment_added` activity atomically
+- [x] Activity exists iff mutation committed (force a failure: e.g. move nonexistent
       ticket → no orphan activity)
 
 ### API keys / auth (REST smoke)
 
-- [ ] Valid `asm_` key → 200 on `GET /api/tickets?project_slug=...`; `last_used_at`
+- [x] Valid `asm_` key → 200 on `GET /api/tickets?project_slug=...`; `last_used_at`
       updates (Plan 01 §1)
-- [ ] Revoked key → 401; garbage key → 401; no auth → 401
-- [ ] API key cannot list/create API keys (403)
-- [ ] Key management scoped to owner (user A cannot revoke B's key)
+- [x] Revoked key → 401; garbage key → 401; no auth → 401
+- [x] API key cannot list/create API keys (403)
+- [x] Key management scoped to owner (user A cannot revoke B's key)
 
 ## Acceptance criteria
 
