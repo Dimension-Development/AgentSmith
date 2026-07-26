@@ -12,13 +12,13 @@ deferred niceties. Items are independent — cherry-pick.
 Agents mutate tickets over MCP, but a human watching the board sees nothing until manual
 refresh — and "watch a card move itself" is *the* demo moment for this product.
 
-- [ ] Enable Supabase Realtime on `tickets` (publication) — migration
-- [ ] Client component wrapper on the board page subscribes to
+- [x] Enable Supabase Realtime on `tickets` (publication) — migration
+- [x] Client component wrapper on the board page subscribes to
       `postgres_changes` for the current `project_id` and calls `router.refresh()`
       (cheap MVP: refetch server component; no client cache to reconcile)
-- [ ] Debounce refreshes (agents can burst updates)
-- [ ] Fallback: 30s polling if Realtime unavailable
-- [ ] Verify with the seeded flow: move a ticket via MCP, watch the board update
+- [x] Debounce refreshes (agents can burst updates)
+- [x] Fallback: 30s polling if Realtime unavailable
+- [x] Verify with the seeded flow: move a ticket via MCP, watch the board update
 
 ## 2. MCP distribution (adoption blocker)
 
@@ -27,28 +27,28 @@ friction level for "the Kanban board that agents actually use."
 
 Pick one (or both, HTTP first):
 
-- [ ] **HTTP MCP endpoint** in the Next app (e.g. `mcp-handler` at `/api/mcp`,
+- [x] **HTTP MCP endpoint** in the Next app (e.g. `mcp-handler` at `/api/mcp`,
       Streamable HTTP) reusing the exact same Bearer `asm_` auth → any agent connects
       with a URL + key, zero install. The stdio bridge stays for local/offline use.
 - [ ] **npm package** `agentsmith-mcp` (move `mcp/server.ts` into a small workspace
       package with a bin) → `npx agentsmith-mcp` for stdio-only harnesses
-- [ ] Update `docs/mcp.md` + README with the new connection story
+- [x] Update `docs/mcp.md` + README with the new connection story
 
 ## 3. Schema single-source (drift already observed)
 
 Zod schemas are duplicated across `lib/validations/tickets.ts` and `mcp/server.ts`
 (drift example: `agent_name` required in MCP, optional in REST).
 
-- [ ] Export request schemas (minus `ticket_id` path params) from `lib/validations/`
-- [ ] MCP server imports and derives its `inputSchema`s from them
-- [ ] Decide the `agent_name` rule once (PRD says required for agents → keep required in
+- [x] Export request schemas (minus `ticket_id` path params) from `lib/validations/`
+- [x] MCP server imports and derives its `inputSchema`s from them
+- [x] Decide the `agent_name` rule once (PRD says required for agents → keep required in
       MCP, optional in REST for humans; document it as intentional, not drift)
 
 ## 4. Pagination & limits
 
-- [ ] `list_tickets`: `limit` (default 100) + `before`/cursor on `created_at`
-- [ ] `get_ticket`: cap comments (e.g. latest 100) — activity already capped at 50
-- [ ] Mirror params in MCP tools
+- [x] `list_tickets`: `limit` (default 100) + `before`/cursor on `created_at`
+- [x] `get_ticket`: cap comments (e.g. latest 100) — activity already capped at 50
+- [x] Mirror params in MCP tools
 
 ## 5. Deferred / tracked ideas (not scheduled)
 

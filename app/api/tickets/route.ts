@@ -12,6 +12,8 @@ export async function GET(request: Request) {
       project_id: searchParams.get("project_id") || undefined,
       project_slug: searchParams.get("project_slug") || undefined,
       status: searchParams.get("status") || undefined,
+      limit: searchParams.get("limit") || undefined,
+      before: searchParams.get("before") || undefined,
     });
     const tickets = await listTickets(supabase, parsed);
     return NextResponse.json({ tickets });
