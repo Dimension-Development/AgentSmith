@@ -28,6 +28,25 @@ export async function logActivity(
   }
 }
 
+export async function listActivityForProject(
+  supabase: SupabaseClient,
+  projectId: string,
+  limit = 100
+): Promise<Activity[]> {
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to load activity: ${error.message}`);
+  }
+
+  return (data ?? []) as Activity[];
+}
+
 export async function listActivityForTicket(
   supabase: SupabaseClient,
   ticketId: string,
