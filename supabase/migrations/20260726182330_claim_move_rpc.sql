@@ -39,12 +39,14 @@ begin
     return t;
   end if;
 
-  if t.status <> 'open' then
-    raise exception 'Ticket not claimable' using errcode = 'P0400';
+  -- PRD §8: "already assigned to another user" wins over "not open" — a
+  -- ticket someone else holds must 409, whatever its status.
+  if t.assigned_to is not null and t.assigned_to <> p_user_id then
+    raise exception 'Ticket already claimed' using errcode = 'P0409';
   end if;
 
-  if t.assigned_to is not null then
-    raise exception 'Ticket already claimed' using errcode = 'P0409';
+  if t.status <> 'open' then
+    raise exception 'Ticket not claimable' using errcode = 'P0400';
   end if;
 
   update public.tickets set
