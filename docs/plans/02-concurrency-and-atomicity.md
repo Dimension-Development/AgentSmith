@@ -76,15 +76,15 @@ cheap while in there. Same question for `add_comment` + `comment_added`.
 
 ## Tasks
 
-- [ ] `npm run db:new -- claim_move_rpc` — write the functions
-- [ ] Decide error signaling convention (e.g. `raise exception using errcode/message`)
+- [x] `npm run db:new -- claim_move_rpc` — write the functions
+- [x] Decide error signaling convention (e.g. `raise exception using errcode/message`)
       and document it in the migration header
-- [ ] `claimTicket` service → `rpc("claim_ticket", ...)`, map errors, keep return shape
-- [ ] `moveTicket` service → `rpc("move_ticket", ...)`, same
-- [ ] Delete the now-dead re-check/race code paths in the service
-- [ ] Update `docs/01-database-schema.md` + PRD §8 note: atomic claim now implemented as
+- [x] `claimTicket` service → `rpc("claim_ticket", ...)`, map errors, keep return shape
+- [x] `moveTicket` service → `rpc("move_ticket", ...)`, same
+- [x] Delete the now-dead re-check/race code paths in the service
+- [x] Update `docs/01-database-schema.md` + PRD §8 note: atomic claim now implemented as
       a DB function (spirit of the conditional-update rule preserved, stronger)
-- [ ] Manual race test: two parallel `claim` curls against one open ticket → exactly one
+- [x] Manual race test: two parallel `claim` curls against one open ticket → exactly one
       201-path success, one 409 (Plan 05 automates this)
 
 ## Non-goals

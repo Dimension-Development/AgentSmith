@@ -181,48 +181,20 @@ export async function createTicket(
 }
 
 /**
- * Idempotent re-claim: keep the stored agent identity current for the new run,
- * without writing a duplicate ticket_claimed activity.
+ * Map errors raised by the claim/move Postgres functions (see the
+ * claim_move_rpc migration for the errcode convention) to ServiceErrors.
  */
-async function refreshAgentFields(
-  supabase: SupabaseClient,
-  existing: Record<string, unknown>,
-  input: {
-    ticket_id: string;
-    agent_name?: string;
-    agent_run_id?: string;
-    harness_name?: string;
+function rpcError(error: { code?: string; message: string }): ServiceError {
+  switch (error.code) {
+    case "P0404":
+      return new ServiceError(error.message, 404);
+    case "P0409":
+      return new ServiceError(error.message, 409);
+    case "P0400":
+      return new ServiceError(error.message, 400);
+    default:
+      return new ServiceError(error.message, 500);
   }
-): Promise<Ticket> {
-  const patch: Record<string, unknown> = {};
-  if (input.agent_name !== undefined && input.agent_name !== existing.agent_name)
-    patch.agent_name = input.agent_name;
-  if (
-    input.agent_run_id !== undefined &&
-    input.agent_run_id !== existing.agent_run_id
-  )
-    patch.agent_run_id = input.agent_run_id;
-  if (
-    input.harness_name !== undefined &&
-    input.harness_name !== existing.harness_name
-  )
-    patch.harness_name = input.harness_name;
-
-  if (Object.keys(patch).length === 0) {
-    return mapTicket(existing);
-  }
-
-  const { data, error } = await supabase
-    .from("tickets")
-    .update(patch)
-    .eq("id", input.ticket_id)
-    .select("*")
-    .maybeSingle();
-
-  if (error) {
-    throw new ServiceError(error.message, 500);
-  }
-  return mapTicket((data ?? existing) as Record<string, unknown>);
 }
 
 export async function claimTicket(
@@ -237,101 +209,21 @@ export async function claimTicket(
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
 
-  const { data: existing, error: loadError } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("id", input.ticket_id)
-    .maybeSingle();
-
-  if (loadError) {
-    throw new ServiceError(loadError.message, 500);
-  }
-  if (!existing) {
-    throw new ServiceError("Ticket not found", 404);
-  }
-
-  // Idempotent re-claim by same assignee
-  if (
-    existing.assigned_to === userId &&
-    existing.status === "in_progress"
-  ) {
-    return refreshAgentFields(
-      supabase,
-      existing as Record<string, unknown>,
-      input
-    );
-  }
-
-  if (existing.status !== "open") {
-    throw new ServiceError("Ticket not claimable", 400);
-  }
-
-  if (existing.assigned_to && existing.assigned_to !== userId) {
-    throw new ServiceError("Ticket already claimed", 409);
-  }
-
-  // Atomic conditional claim
-  const { data: claimed, error: claimError } = await supabase
-    .from("tickets")
-    .update({
-      assigned_to: userId,
-      claimed_at: new Date().toISOString(),
-      status: "in_progress",
-      agent_name: input.agent_name ?? null,
-      agent_run_id: input.agent_run_id ?? null,
-      harness_name: input.harness_name ?? null,
-    })
-    .eq("id", input.ticket_id)
-    .eq("status", "open")
-    .is("assigned_to", null)
-    .select("*")
-    .maybeSingle();
-
-  if (claimError) {
-    throw new ServiceError(claimError.message, 500);
-  }
-
-  if (!claimed) {
-    // Race: re-check
-    const { data: again } = await supabase
-      .from("tickets")
-      .select("*")
-      .eq("id", input.ticket_id)
-      .maybeSingle();
-
-    if (
-      again &&
-      again.assigned_to === userId &&
-      again.status === "in_progress"
-    ) {
-      return refreshAgentFields(
-        supabase,
-        again as Record<string, unknown>,
-        input
-      );
-    }
-    if (again?.assigned_to && again.assigned_to !== userId) {
-      throw new ServiceError("Ticket already claimed", 409);
-    }
-    throw new ServiceError("Ticket not claimable", 400);
-  }
-
-  await logActivity(supabase, {
-    ticket_id: claimed.id,
-    project_id: claimed.project_id,
-    actor_id: userId,
-    activity_type: "ticket_claimed",
-    message: input.agent_name
-      ? `Claimed by ${input.agent_name}`
-      : "Ticket claimed",
-    metadata: {
-      agent_name: input.agent_name ?? null,
-      harness_name: input.harness_name ?? null,
-      agent_run_id: input.agent_run_id ?? null,
-    },
+  // Single transaction in Postgres: lock row, check claimability, set claim
+  // fields, write ticket_claimed activity. Idempotent same-user re-claim.
+  const { data, error } = await supabase.rpc("claim_ticket", {
+    p_ticket_id: input.ticket_id,
+    p_user_id: userId,
+    p_agent_name: input.agent_name ?? null,
+    p_agent_run_id: input.agent_run_id ?? null,
+    p_harness_name: input.harness_name ?? null,
   });
 
-  return mapTicket(claimed as Record<string, unknown>);
+  if (error) {
+    throw rpcError(error);
+  }
+
+  return mapTicket(data as Record<string, unknown>);
 }
 
 export async function moveTicket(
@@ -341,92 +233,20 @@ export async function moveTicket(
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
 
-  const { data: existing, error: loadError } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("id", input.ticket_id)
-    .maybeSingle();
-
-  if (loadError) {
-    throw new ServiceError(loadError.message, 500);
-  }
-  if (!existing) {
-    throw new ServiceError("Ticket not found", 404);
-  }
-
-  if (existing.status === input.status) {
-    return mapTicket(existing as Record<string, unknown>);
-  }
-
-  // Soft guardrail: open → in_progress only via claim
-  if (existing.status === "open" && input.status === "in_progress") {
-    throw new ServiceError(
-      "Use claim_ticket to move open tickets to in_progress",
-      400
-    );
-  }
-
-  const wasClaimed = Boolean(existing.assigned_to || existing.claimed_at);
-  const releasing =
-    input.status === "open" || input.status === "backlog";
-
-  const patch: Record<string, unknown> = {
-    status: input.status,
-  };
-
-  if (releasing && wasClaimed) {
-    patch.assigned_to = null;
-    patch.claimed_at = null;
-    patch.agent_name = null;
-    patch.agent_run_id = null;
-    patch.harness_name = null;
-  }
-
-  // Do not set merged_at on complete — only when PR is actually merged
-
-  const { data: updated, error: updateError } = await supabase
-    .from("tickets")
-    .update(patch)
-    .eq("id", input.ticket_id)
-    .select("*")
-    .single();
-
-  if (updateError) {
-    throw new ServiceError(updateError.message, 500);
-  }
-
-  await logActivity(supabase, {
-    ticket_id: updated.id,
-    project_id: updated.project_id,
-    actor_id: userId,
-    activity_type: "status_changed",
-    message: `Status changed from ${existing.status} to ${input.status}`,
-    metadata: { from: existing.status, to: input.status },
+  // Single transaction in Postgres: lock row, enforce guardrails, update
+  // status (clearing claim fields when releasing), write all activity rows.
+  // merged_at is never set here — only when a PR is actually merged.
+  const { data, error } = await supabase.rpc("move_ticket", {
+    p_ticket_id: input.ticket_id,
+    p_user_id: userId,
+    p_status: input.status,
   });
 
-  if (releasing && wasClaimed) {
-    await logActivity(supabase, {
-      ticket_id: updated.id,
-      project_id: updated.project_id,
-      actor_id: userId,
-      activity_type: "ticket_unclaimed",
-      message: "Ticket unclaimed (moved to " + input.status + ")",
-      metadata: { previous_assignee: existing.assigned_to },
-    });
+  if (error) {
+    throw rpcError(error);
   }
 
-  if (input.status === "complete") {
-    await logActivity(supabase, {
-      ticket_id: updated.id,
-      project_id: updated.project_id,
-      actor_id: userId,
-      activity_type: "ticket_completed",
-      message: "Ticket marked complete",
-      metadata: {},
-    });
-  }
-
-  return mapTicket(updated as Record<string, unknown>);
+  return mapTicket(data as Record<string, unknown>);
 }
 
 export async function updateTicket(

@@ -251,7 +251,11 @@ All status transitions, claim rules, claim-field clearing, and activity logging 
 
 Rules:
 1. Ticket must exist and be in status **`open`** only. Claim from `backlog` is not allowed.
-2. Implement claim with an **atomic conditional update** (required for the multi-agent success metric):
+2. Implement claim with an **atomic conditional update** (required for the multi-agent success metric).
+   *Implementation note (post-v1.2):* claim and move are now Postgres functions
+   (`claim_ticket` / `move_ticket`, see the `claim_move_rpc` migration) that lock the
+   row and write the activity log in the same transaction — the conditional-update
+   invariant below is preserved and strengthened. Reference SQL:
 
 ```sql
 UPDATE tickets
