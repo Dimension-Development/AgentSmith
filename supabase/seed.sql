@@ -75,7 +75,19 @@ begin
   )
   on conflict do nothing;
 
-  -- Owner membership on the default project (created in the initial migration)
+  -- Default project (moved out of the initial migration so migrations stay
+  -- free of org-specific data; hosted deploys create their own projects)
+  insert into public.projects (name, slug, description, github_owner, github_repo, default_branch)
+  values (
+    'Default',
+    'default',
+    'Primary project for AgentSmith',
+    'Dimension-Development',
+    'AgentSmith',
+    'main'
+  )
+  on conflict (slug) do nothing;
+
   select id into default_project_id
   from public.projects
   where slug = 'default'

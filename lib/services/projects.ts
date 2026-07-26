@@ -56,31 +56,3 @@ export async function getProjectById(
   return data as Project;
 }
 
-/** Ensure a default project exists (idempotent seed for empty DBs). */
-export async function ensureDefaultProject(
-  supabase: SupabaseClient
-): Promise<Project> {
-  const existing = await listProjects(supabase);
-  if (existing.length > 0) {
-    return existing[0];
-  }
-
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      name: "Default",
-      slug: "default",
-      description: "Primary project for AgentSmith",
-      github_owner: "Dimension-Development",
-      github_repo: "AgentSmith",
-      default_branch: "main",
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    throw new ServiceError(error.message, 500);
-  }
-
-  return data as Project;
-}

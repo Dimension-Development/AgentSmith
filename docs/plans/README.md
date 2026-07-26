@@ -6,12 +6,12 @@ earlier plans unblock or de-risk later ones.
 
 | # | Plan | Theme | Size | Status |
 |---|------|-------|------|--------|
-| 1 | [01-quick-fixes.md](./01-quick-fixes.md) | Known bugs + small correctness fixes | S | Not started |
-| 2 | [02-concurrency-and-atomicity.md](./02-concurrency-and-atomicity.md) | Race-safe moves, transactional claim + activity | M | Not started |
-| 3 | [03-authorization.md](./03-authorization.md) | Single authorization authority (session vs API key) | M | Not started |
-| 4 | [04-deploy-hardening.md](./04-deploy-hardening.md) | Blockers for hosted deploy (signup lockdown, seeds, error hygiene) | M | Not started |
-| 5 | [05-tests.md](./05-tests.md) | Integration tests for the claim/move invariants | M | Not started |
-| 6 | [06-product-polish.md](./06-product-polish.md) | Realtime board, MCP distribution, pagination, ordering | L | Not started |
+| 1 | [01-quick-fixes.md](./01-quick-fixes.md) | Known bugs + small correctness fixes | S | **Done** |
+| 2 | [02-concurrency-and-atomicity.md](./02-concurrency-and-atomicity.md) | Race-safe moves, transactional claim + activity | M | **Done** |
+| 3 | [03-authorization.md](./03-authorization.md) | Single authorization authority (session vs API key) | M | **Done** |
+| 4 | [04-deploy-hardening.md](./04-deploy-hardening.md) | Blockers for hosted deploy (signup lockdown, seeds, error hygiene) | M | **Done** |
+| 5 | [05-tests.md](./05-tests.md) | Integration tests for the claim/move invariants | M | **Done** |
+| 6 | [06-product-polish.md](./06-product-polish.md) | Realtime board, MCP distribution, pagination, ordering | L | **Done** (npm pkg deferred) |
 
 ## Ground rules
 

@@ -28,8 +28,8 @@ admin
   .then(undefined, () => {}); // fire-and-forget, swallow errors
 ```
 
-- [ ] Fix in `authenticateApiKey`
-- [ ] Manually verify: call the API with a key, confirm `last_used_at` populates in Studio
+- [x] Fix in `authenticateApiKey`
+- [x] Manually verify: call the API with a key, confirm `last_used_at` populates in Studio
 
 ## 2. Idempotent re-claim ignores new agent metadata
 
@@ -40,8 +40,8 @@ stale run's identity — bad for the audit story.
 **Fix:** on the idempotent path, if any agent field differs from what's stored, update
 those fields (no `ticket_claimed` activity — PRD rule stands: no duplicate claim event).
 
-- [ ] Update idempotent branch in `claimTicket` (both the pre-check and post-race branch)
-- [ ] Keep: no duplicate `ticket_claimed` activity on re-claim
+- [x] Update idempotent branch in `claimTicket` (both the pre-check and post-race branch)
+- [x] Keep: no duplicate `ticket_claimed` activity on re-claim
 
 ## 3. `logActivity` accepts `activity_type: string`
 
@@ -52,8 +52,8 @@ The DB column is a Postgres enum; a typo in a service becomes a runtime 500.
 comment_added | pr_linked | pr_merged | ticket_completed`) and use it in
 `LogActivityInput`.
 
-- [ ] Add `ActivityType` union to `lib/types.ts`
-- [ ] Type `LogActivityInput.activity_type` with it; fix any resulting compile errors
+- [x] Add `ActivityType` union to `lib/types.ts`
+- [x] Type `LogActivityInput.activity_type` with it; fix any resulting compile errors
 
 ## 4. `github_pr_state` validated as bare string
 
@@ -63,8 +63,8 @@ Docs say `open | closed | merged`; Zod says `z.string()`.
 `lib/validations/tickets.ts` **and** the duplicated schema in `mcp/server.ts`
 (schema dedupe itself is Plan 06, but keep these two in sync until then).
 
-- [ ] Tighten in `lib/validations/tickets.ts`
-- [ ] Tighten in `mcp/server.ts`
+- [x] Tighten in `lib/validations/tickets.ts`
+- [x] Tighten in `mcp/server.ts`
 
 ## 5. Unbounded inputs
 
@@ -79,8 +79,8 @@ size — an agent can write megabytes.
 - `agent_name` / `harness_name` / `agent_run_id` / `branch_name`: max 200 chars
 - `github_pr_url` / sha fields: max 500 chars
 
-- [ ] Apply limits in `lib/validations/tickets.ts`
-- [ ] Mirror in `mcp/server.ts` schemas
+- [x] Apply limits in `lib/validations/tickets.ts`
+- [x] Mirror in `mcp/server.ts` schemas
 
 ## 6. Board card reshuffling
 
@@ -89,7 +89,7 @@ size — an agent can write megabytes.
 **Fix:** order by `created_at desc` (stable). Explicit positions are out of scope
 (Plan 06 notes it).
 
-- [ ] Change ordering in `listTickets`
+- [x] Change ordering in `listTickets`
 
 ---
 

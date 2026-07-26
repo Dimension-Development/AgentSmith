@@ -1,8 +1,16 @@
 # AgentSmith MCP (Phase 2)
 
-Local coding agents talk to AgentSmith over **MCP → REST API → services**, authenticated with a **personal API key**.
+Coding agents talk to AgentSmith over MCP, authenticated with a **personal API key**.
 
 Keys are **not** GitHub credentials. They act as the human owner for claim / move / comments.
+
+Two ways to connect — both expose the same 7 tools from the same shared schemas
+(`lib/mcp/tool-schemas.ts`) and the same service layer:
+
+| Transport | Endpoint | Best for |
+|-----------|----------|----------|
+| **HTTP (Streamable)** | `https://<host>/api/mcp` | Any agent, zero install — just URL + key |
+| **stdio bridge** | `npm run mcp` (this repo) | Local/offline harnesses that only speak stdio |
 
 ## Prerequisites
 
@@ -10,7 +18,35 @@ Keys are **not** GitHub credentials. They act as the human owner for claim / mov
 2. Signed in as admin (or any user)
 3. Create a key: **Settings → API keys** (or `/settings/api-keys`)
 
-## Configure Claude Code / Cursor
+## Option A — HTTP endpoint (recommended)
+
+Point any MCP client at `/api/mcp` with your key as a Bearer token. No checkout needed.
+
+```bash
+claude mcp add agentsmith \
+  --transport http \
+  http://127.0.0.1:3000/api/mcp \
+  --header "Authorization: Bearer asm_your_key_here"
+```
+
+Or in JSON config:
+
+```json
+{
+  "mcpServers": {
+    "agentsmith": {
+      "type": "http",
+      "url": "http://127.0.0.1:3000/api/mcp",
+      "headers": { "Authorization": "Bearer asm_your_key_here" }
+    }
+  }
+}
+```
+
+Requests without a valid key get 401. The endpoint calls the service layer directly
+(no REST hop) — behavior is identical to the REST API.
+
+## Option B — stdio bridge (Claude Code / Cursor)
 
 ```json
 {

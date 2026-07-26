@@ -8,7 +8,16 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import {
+  addCommentShape,
+  claimTicketShape,
+  createTicketShape,
+  getTicketShape,
+  listTicketsShape,
+  moveTicketShape,
+  updateTicketShape,
+  TOOL_DESCRIPTIONS,
+} from "../lib/mcp/tool-schemas";
 
 const API_URL = (process.env.AGENTSMITH_API_URL ?? "http://127.0.0.1:3000").replace(
   /\/$/,
@@ -22,14 +31,6 @@ if (!API_KEY) {
   );
   process.exit(1);
 }
-
-const statusEnum = z.enum([
-  "backlog",
-  "open",
-  "in_progress",
-  "pr_review",
-  "complete",
-]);
 
 async function api<T>(
   path: string,
@@ -93,13 +94,8 @@ const server = new McpServer({
 server.registerTool(
   "list_tickets",
   {
-    description:
-      "List tickets in a project. Requires project_id or project_slug. Optionally filter by status.",
-    inputSchema: {
-      project_id: z.string().uuid().optional(),
-      project_slug: z.string().min(1).optional(),
-      status: statusEnum.optional(),
-    },
+    description: TOOL_DESCRIPTIONS.list_tickets,
+    inputSchema: listTicketsShape,
   },
   async (args) => {
     try {
@@ -107,6 +103,8 @@ server.registerTool(
       if (args.project_id) params.set("project_id", args.project_id);
       if (args.project_slug) params.set("project_slug", args.project_slug);
       if (args.status) params.set("status", args.status);
+      if (args.limit) params.set("limit", String(args.limit));
+      if (args.before) params.set("before", args.before);
       const data = await api<{ tickets: unknown[] }>(
         `/api/tickets?${params.toString()}`
       );
@@ -120,10 +118,8 @@ server.registerTool(
 server.registerTool(
   "get_ticket",
   {
-    description: "Full ticket details including comments and recent activity.",
-    inputSchema: {
-      ticket_id: z.string().uuid(),
-    },
+    description: TOOL_DESCRIPTIONS.get_ticket,
+    inputSchema: getTicketShape,
   },
   async (args) => {
     try {
@@ -138,14 +134,8 @@ server.registerTool(
 server.registerTool(
   "create_ticket",
   {
-    description:
-      "Create a ticket (always starts in backlog). Promote to open with move_ticket when ready.",
-    inputSchema: {
-      project_id: z.string().uuid(),
-      title: z.string().min(1).max(200),
-      description: z.string().optional(),
-      type: z.enum(["feature", "bug"]),
-    },
+    description: TOOL_DESCRIPTIONS.create_ticket,
+    inputSchema: createTicketShape,
   },
   async (args) => {
     try {
@@ -163,14 +153,8 @@ server.registerTool(
 server.registerTool(
   "claim_ticket",
   {
-    description:
-      "Atomically claim an open ticket. Sets assignee to the API key owner and status to in_progress.",
-    inputSchema: {
-      ticket_id: z.string().uuid(),
-      agent_name: z.string().min(1),
-      agent_run_id: z.string().optional(),
-      harness_name: z.string().optional(),
-    },
+    description: TOOL_DESCRIPTIONS.claim_ticket,
+    inputSchema: claimTicketShape,
   },
   async (args) => {
     try {
@@ -189,30 +173,8 @@ server.registerTool(
 server.registerTool(
   "update_ticket",
   {
-    description:
-      "Partial update (description, checklist, branch, PR metadata). merged_at only when a PR is actually merged.",
-    inputSchema: {
-      ticket_id: z.string().uuid(),
-      title: z.string().min(1).max(200).optional(),
-      description: z.string().optional(),
-      type: z.enum(["feature", "bug"]).optional(),
-      branch_name: z.string().nullable().optional(),
-      checklist: z
-        .array(
-          z.object({
-            id: z.string(),
-            text: z.string(),
-            done: z.boolean(),
-          })
-        )
-        .optional(),
-      github_pr_number: z.number().int().nullable().optional(),
-      github_pr_url: z.string().nullable().optional(),
-      github_pr_state: z.string().nullable().optional(),
-      github_head_sha: z.string().nullable().optional(),
-      github_merge_commit_sha: z.string().nullable().optional(),
-      merged_at: z.string().nullable().optional(),
-    },
+    description: TOOL_DESCRIPTIONS.update_ticket,
+    inputSchema: updateTicketShape,
   },
   async (args) => {
     try {
@@ -231,12 +193,8 @@ server.registerTool(
 server.registerTool(
   "add_comment",
   {
-    description: "Add a comment to a ticket (also writes activity_log).",
-    inputSchema: {
-      ticket_id: z.string().uuid(),
-      body: z.string().min(1),
-      is_system: z.boolean().optional(),
-    },
+    description: TOOL_DESCRIPTIONS.add_comment,
+    inputSchema: addCommentShape,
   },
   async (args) => {
     try {
@@ -255,12 +213,8 @@ server.registerTool(
 server.registerTool(
   "move_ticket",
   {
-    description:
-      "Change ticket status. open→in_progress must use claim_ticket. Moving to open/backlog unclaims.",
-    inputSchema: {
-      ticket_id: z.string().uuid(),
-      status: statusEnum,
-    },
+    description: TOOL_DESCRIPTIONS.move_ticket,
+    inputSchema: moveTicketShape,
   },
   async (args) => {
     try {

@@ -10,6 +10,10 @@ import {
 } from "@/lib/types";
 import { logActivity, listActivityForTicket } from "@/lib/services/activity";
 import { getProjectById, getProjectBySlug } from "@/lib/services/projects";
+import {
+  requireProjectAccess,
+  requireTicketAccess,
+} from "@/lib/services/access";
 
 function mapTicket(row: Record<string, unknown>, commentCount?: number): Ticket {
   return {
@@ -55,12 +59,18 @@ async function requireUserId(
   return user.id;
 }
 
+export const LIST_TICKETS_DEFAULT_LIMIT = 100;
+export const GET_TICKET_COMMENT_LIMIT = 100;
+
 export async function listTickets(
   supabase: SupabaseClient,
   opts: {
     project_id?: string;
     project_slug?: string;
     status?: TicketStatus;
+    limit?: number;
+    /** Cursor: only tickets created strictly before this ISO timestamp. */
+    before?: string;
   }
 ): Promise<Ticket[]> {
   if (!opts.project_id && !opts.project_slug) {
@@ -76,11 +86,16 @@ export async function listTickets(
   let query = supabase
     .from("tickets")
     .select("*, comments(count)")
+    // created_at keeps card order stable; updated_at would reshuffle on every touch
     .eq("project_id", projectId!)
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? LIST_TICKETS_DEFAULT_LIMIT);
 
   if (opts.status) {
     query = query.eq("status", opts.status);
+  }
+  if (opts.before) {
+    query = query.lt("created_at", opts.before);
   }
 
   const { data, error } = await query;
@@ -118,11 +133,13 @@ export async function getTicket(
     throw new ServiceError("Ticket not found", 404);
   }
 
+  // Latest N comments, returned oldest-first for display.
   const { data: comments, error: commentsError } = await supabase
     .from("comments")
     .select("*")
     .eq("ticket_id", ticketId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(GET_TICKET_COMMENT_LIMIT);
 
   if (commentsError) {
     throw new ServiceError(commentsError.message, 500);
@@ -132,7 +149,7 @@ export async function getTicket(
 
   return {
     ...mapTicket(data as Record<string, unknown>),
-    comments: (comments ?? []) as Comment[],
+    comments: ((comments ?? []) as Comment[]).reverse(),
     activity,
   };
 }
@@ -149,6 +166,7 @@ export async function createTicket(
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
   await getProjectById(supabase, input.project_id);
+  await requireProjectAccess(supabase, userId, input.project_id);
 
   const { data, error } = await supabase
     .from("tickets")
@@ -179,6 +197,23 @@ export async function createTicket(
   return mapTicket(data as Record<string, unknown>);
 }
 
+/**
+ * Map errors raised by the claim/move Postgres functions (see the
+ * claim_move_rpc migration for the errcode convention) to ServiceErrors.
+ */
+function rpcError(error: { code?: string; message: string }): ServiceError {
+  switch (error.code) {
+    case "P0404":
+      return new ServiceError(error.message, 404);
+    case "P0409":
+      return new ServiceError(error.message, 409);
+    case "P0400":
+      return new ServiceError(error.message, 400);
+    default:
+      return new ServiceError(error.message, 500);
+  }
+}
+
 export async function claimTicket(
   supabase: SupabaseClient,
   input: {
@@ -190,94 +225,23 @@ export async function claimTicket(
   actorUserId?: string
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
+  await requireTicketAccess(supabase, userId, input.ticket_id);
 
-  const { data: existing, error: loadError } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("id", input.ticket_id)
-    .maybeSingle();
-
-  if (loadError) {
-    throw new ServiceError(loadError.message, 500);
-  }
-  if (!existing) {
-    throw new ServiceError("Ticket not found", 404);
-  }
-
-  // Idempotent re-claim by same assignee
-  if (
-    existing.assigned_to === userId &&
-    existing.status === "in_progress"
-  ) {
-    return mapTicket(existing as Record<string, unknown>);
-  }
-
-  if (existing.status !== "open") {
-    throw new ServiceError("Ticket not claimable", 400);
-  }
-
-  if (existing.assigned_to && existing.assigned_to !== userId) {
-    throw new ServiceError("Ticket already claimed", 409);
-  }
-
-  // Atomic conditional claim
-  const { data: claimed, error: claimError } = await supabase
-    .from("tickets")
-    .update({
-      assigned_to: userId,
-      claimed_at: new Date().toISOString(),
-      status: "in_progress",
-      agent_name: input.agent_name ?? null,
-      agent_run_id: input.agent_run_id ?? null,
-      harness_name: input.harness_name ?? null,
-    })
-    .eq("id", input.ticket_id)
-    .eq("status", "open")
-    .is("assigned_to", null)
-    .select("*")
-    .maybeSingle();
-
-  if (claimError) {
-    throw new ServiceError(claimError.message, 500);
-  }
-
-  if (!claimed) {
-    // Race: re-check
-    const { data: again } = await supabase
-      .from("tickets")
-      .select("*")
-      .eq("id", input.ticket_id)
-      .maybeSingle();
-
-    if (
-      again &&
-      again.assigned_to === userId &&
-      again.status === "in_progress"
-    ) {
-      return mapTicket(again as Record<string, unknown>);
-    }
-    if (again?.assigned_to && again.assigned_to !== userId) {
-      throw new ServiceError("Ticket already claimed", 409);
-    }
-    throw new ServiceError("Ticket not claimable", 400);
-  }
-
-  await logActivity(supabase, {
-    ticket_id: claimed.id,
-    project_id: claimed.project_id,
-    actor_id: userId,
-    activity_type: "ticket_claimed",
-    message: input.agent_name
-      ? `Claimed by ${input.agent_name}`
-      : "Ticket claimed",
-    metadata: {
-      agent_name: input.agent_name ?? null,
-      harness_name: input.harness_name ?? null,
-      agent_run_id: input.agent_run_id ?? null,
-    },
+  // Single transaction in Postgres: lock row, check claimability, set claim
+  // fields, write ticket_claimed activity. Idempotent same-user re-claim.
+  const { data, error } = await supabase.rpc("claim_ticket", {
+    p_ticket_id: input.ticket_id,
+    p_user_id: userId,
+    p_agent_name: input.agent_name ?? null,
+    p_agent_run_id: input.agent_run_id ?? null,
+    p_harness_name: input.harness_name ?? null,
   });
 
-  return mapTicket(claimed as Record<string, unknown>);
+  if (error) {
+    throw rpcError(error);
+  }
+
+  return mapTicket(data as Record<string, unknown>);
 }
 
 export async function moveTicket(
@@ -286,93 +250,22 @@ export async function moveTicket(
   actorUserId?: string
 ): Promise<Ticket> {
   const userId = await requireUserId(supabase, actorUserId);
+  await requireTicketAccess(supabase, userId, input.ticket_id);
 
-  const { data: existing, error: loadError } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("id", input.ticket_id)
-    .maybeSingle();
-
-  if (loadError) {
-    throw new ServiceError(loadError.message, 500);
-  }
-  if (!existing) {
-    throw new ServiceError("Ticket not found", 404);
-  }
-
-  if (existing.status === input.status) {
-    return mapTicket(existing as Record<string, unknown>);
-  }
-
-  // Soft guardrail: open → in_progress only via claim
-  if (existing.status === "open" && input.status === "in_progress") {
-    throw new ServiceError(
-      "Use claim_ticket to move open tickets to in_progress",
-      400
-    );
-  }
-
-  const wasClaimed = Boolean(existing.assigned_to || existing.claimed_at);
-  const releasing =
-    input.status === "open" || input.status === "backlog";
-
-  const patch: Record<string, unknown> = {
-    status: input.status,
-  };
-
-  if (releasing && wasClaimed) {
-    patch.assigned_to = null;
-    patch.claimed_at = null;
-    patch.agent_name = null;
-    patch.agent_run_id = null;
-    patch.harness_name = null;
-  }
-
-  // Do not set merged_at on complete — only when PR is actually merged
-
-  const { data: updated, error: updateError } = await supabase
-    .from("tickets")
-    .update(patch)
-    .eq("id", input.ticket_id)
-    .select("*")
-    .single();
-
-  if (updateError) {
-    throw new ServiceError(updateError.message, 500);
-  }
-
-  await logActivity(supabase, {
-    ticket_id: updated.id,
-    project_id: updated.project_id,
-    actor_id: userId,
-    activity_type: "status_changed",
-    message: `Status changed from ${existing.status} to ${input.status}`,
-    metadata: { from: existing.status, to: input.status },
+  // Single transaction in Postgres: lock row, enforce guardrails, update
+  // status (clearing claim fields when releasing), write all activity rows.
+  // merged_at is never set here — only when a PR is actually merged.
+  const { data, error } = await supabase.rpc("move_ticket", {
+    p_ticket_id: input.ticket_id,
+    p_user_id: userId,
+    p_status: input.status,
   });
 
-  if (releasing && wasClaimed) {
-    await logActivity(supabase, {
-      ticket_id: updated.id,
-      project_id: updated.project_id,
-      actor_id: userId,
-      activity_type: "ticket_unclaimed",
-      message: "Ticket unclaimed (moved to " + input.status + ")",
-      metadata: { previous_assignee: existing.assigned_to },
-    });
+  if (error) {
+    throw rpcError(error);
   }
 
-  if (input.status === "complete") {
-    await logActivity(supabase, {
-      ticket_id: updated.id,
-      project_id: updated.project_id,
-      actor_id: userId,
-      activity_type: "ticket_completed",
-      message: "Ticket marked complete",
-      metadata: {},
-    });
-  }
-
-  return mapTicket(updated as Record<string, unknown>);
+  return mapTicket(data as Record<string, unknown>);
 }
 
 export async function updateTicket(
@@ -407,6 +300,8 @@ export async function updateTicket(
   if (!existing) {
     throw new ServiceError("Ticket not found", 404);
   }
+
+  await requireProjectAccess(supabase, userId, existing.project_id);
 
   const patch: Record<string, unknown> = {};
   if (input.title !== undefined) patch.title = input.title.trim();
@@ -508,6 +403,8 @@ export async function addComment(
   if (!ticket) {
     throw new ServiceError("Ticket not found", 404);
   }
+
+  await requireProjectAccess(supabase, userId, ticket.project_id);
 
   const { data, error } = await supabase
     .from("comments")

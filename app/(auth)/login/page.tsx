@@ -46,6 +46,9 @@ export default function LoginPage() {
         email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // Invite-only posture (PRD §7.1): magic links sign in existing
+          // users only — they must never create accounts.
+          shouldCreateUser: false,
         },
       });
       if (authError) throw authError;

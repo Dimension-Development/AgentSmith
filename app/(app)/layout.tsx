@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ensureDefaultProject, listProjects } from "@/lib/services/projects";
+import { listProjects } from "@/lib/services/projects";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
 import { SignOutButton } from "@/components/SignOutButton";
 
@@ -14,13 +14,7 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let projects: Awaited<ReturnType<typeof listProjects>> = [];
-  try {
-    await ensureDefaultProject(supabase);
-    projects = await listProjects(supabase);
-  } catch {
-    projects = [];
-  }
+  const projects = await listProjects(supabase).catch(() => []);
 
   return (
     <div className="min-h-screen">

@@ -173,7 +173,18 @@ npm run db:status
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only — never expose to browser or MCP clients |
 | Full `asm_…` keys | Show once at creation; rotate if leaked into chat/logs |
 
-Service role is used server-side for API key hash lookup only. Agents authenticate with personal keys, not service role.
+Service role is used server-side only, behind API routes and the service layer. Agents authenticate with personal keys, not service role.
+
+## Authorization model (Plan 03 decision)
+
+The **service layer is the single authorization authority**. Both auth paths (browser
+session and Bearer API key) resolve to a `userId` in `lib/auth/request-auth.ts` and use
+the admin (service-role) client for data access, so REST and MCP traverse identical
+service code. `lib/services/access.ts` (`requireProjectAccess` / `requireTicketAccess`)
+is the choke point — when membership roles land, enforce them there and nowhere else.
+RLS is a read-only backstop: authenticated users can read; direct table writes are
+blocked (writes must go through services). Claim/move rules are transactional Postgres
+functions (`claim_ticket` / `move_ticket`) — change them via migration, not in TS.
 
 ---
 

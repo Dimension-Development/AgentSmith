@@ -127,11 +127,13 @@ export async function authenticateApiKey(
     throw new ServiceError("Invalid or revoked API key", 401);
   }
 
-  // Best-effort last_used_at (ignore errors)
-  void admin
+  // Best-effort last_used_at. Supabase builders are lazy thenables — the request
+  // only fires on then/await, so `void builder` would never execute it.
+  admin
     .from("api_keys")
     .update({ last_used_at: new Date().toISOString() })
-    .eq("id", data.id);
+    .eq("id", data.id)
+    .then(undefined, () => {});
 
   return { userId: data.user_id as string, keyId: data.id as string };
 }

@@ -189,27 +189,24 @@ create trigger tickets_set_updated_at
   execute function public.set_updated_at();
 ```
 
-## Claim concurrency (service layer)
+## Claim concurrency (Postgres functions)
 
-Do **not** implement claim as read-then-update in application code alone. The service layer must use an atomic conditional update so two agents cannot both claim the same open ticket:
+Do **not** implement claim or move as read-then-update in application code. As of the
+`claim_move_rpc` migration, both are Postgres functions called via `supabase.rpc()`:
 
-```sql
-UPDATE public.tickets
-SET assigned_to = $user_id,
-    claimed_at = now(),
-    status = 'in_progress',
-    agent_name = $agent_name,
-    agent_run_id = $agent_run_id,
-    harness_name = $harness_name
-WHERE id = $ticket_id
-  AND status = 'open'
-  AND assigned_to IS NULL
-RETURNING *;
-```
+- `public.claim_ticket(p_ticket_id, p_user_id, p_agent_name, p_agent_run_id, p_harness_name)`
+- `public.move_ticket(p_ticket_id, p_user_id, p_status)`
 
-Idempotent path and error messages: see PRD §8 and `02-mcp-and-api.md`.
+Each does `SELECT … FOR UPDATE` → guardrail checks → mutation → activity insert in a
+**single transaction**, which is strictly stronger than the PRD §8 conditional-UPDATE
+rule (same invariant, plus the activity log can never diverge from the mutation).
 
-Moving to `open` or `backlog` must clear claim/agent fields and write `ticket_unclaimed` when applicable (service layer).
+Error convention (mapped to HTTP by `lib/services/tickets.ts`): errcode `P0404` → 404,
+`P0409` → 409 ("Ticket already claimed"), `P0400` → 400 (message is user-facing).
+
+Idempotent same-user re-claim returns the row, refreshes agent metadata, and writes no
+duplicate `ticket_claimed` activity. `move_ticket` to `open`/`backlog` clears claim
+fields and writes `ticket_unclaimed` in the same transaction.
 
 ## Row Level Security (MVP – private deployment)
 

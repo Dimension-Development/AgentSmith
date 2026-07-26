@@ -52,20 +52,20 @@ problem. Keep restrictive RLS as a backstop, but treat services as the source of
 
 ## Tasks (assuming Option A)
 
-- [ ] Record the decision in PRD (amend §7.1 target model) and AGENTS.md
-- [ ] Add `requireProjectAccess(supabase, userId, projectId, minRole?)` in
+- [x] Record the decision in PRD (amend §7.1 target model) and AGENTS.md
+- [x] Add `requireProjectAccess(supabase, userId, projectId, minRole?)` in
       `lib/services/` — for MVP it checks the user exists / is authenticated; wired for
       membership checks later
-- [ ] Call it at the top of every ticket/comment/project service function
-- [ ] Switch session-path services to the admin client **via the service layer only**
+- [x] Call it at the top of every ticket/comment/project service function
+- [x] Switch session-path services to the admin client **via the service layer only**
       (routes still resolve the session for identity; only `lib/services/*` touches the
       admin client)
-- [ ] Thread `p_user_id` into the Plan 02 SQL functions as the sole actor identity
-- [ ] Tighten RLS from `using (true)` to "authenticated can read; writes via service
+- [x] Thread `p_user_id` into the Plan 02 SQL functions as the sole actor identity
+- [x] Tighten RLS from `using (true)` to "authenticated can read; writes via service
       role only" as backstop (separate migration; verify UI still works — UI mutations
       go through API routes, but **check for any direct supabase-js writes in
       components first**)
-- [ ] Confirm `api_keys` service functions still pass an explicitly-scoped `user_id`
+- [x] Confirm `api_keys` service functions still pass an explicitly-scoped `user_id`
       everywhere (they do today — keep it that way)
 
 ## Non-goals
