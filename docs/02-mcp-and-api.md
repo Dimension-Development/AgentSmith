@@ -1,13 +1,13 @@
 # AgentSmith — MCP Tools & API Specification
 
-**Version:** 1.1
+**Version:** 1.2
 
 This document defines the exact contracts that coding agents (Grok Build, Claude Code, Cursor, etc.) will use.
 
 ## Design Rules for Implementers
 
 1. All tools must return **structured JSON**. Never return free-form text as the primary response.
-2. Errors must be clear and actionable (e.g. `"Ticket not found"`, `"Ticket already claimed"`).
+2. Errors must be clear and actionable (e.g. `"Ticket not found"`, `"Ticket already claimed"`, `"Ticket not claimable"`, `"project_id or project_slug is required"`).
 3. Prefer calling Next.js API routes / **Services** from the MCP server rather than talking directly to Supabase.
 4. Use Zod for input validation on both API and MCP layers.
 5. Keep tool names stable — agents will hard-code them.
@@ -25,6 +25,23 @@ Webhooks   ──┘
 
 ---
 
+## Auth
+
+| Client | Auth |
+|--------|------|
+| Browser | Supabase session (cookie / JWT) |
+| MCP / local agents | `Authorization: Bearer <api_key>` |
+
+### Personal API keys (Phase 2)
+
+- Keys are **owned by a human user** (`api_keys.user_id`).
+- The key acts as that user for claim, move, comments, etc. (`assigned_to` / `actor_id` = key owner).
+- Keys are **not** GitHub credentials. Agents still use git/GitHub for code; AgentSmith keys exist so the agent can call list/claim/update APIs. **Git push alone does not update AgentSmith work state.**
+- Scope (MVP): user-owned; can act on any project the user can access under open authenticated RLS.
+- Store only a hash of the key; show `key_prefix` in the UI; support revoke.
+
+---
+
 ## MCP Tools
 
 ### 1. `list_tickets`
@@ -39,6 +56,8 @@ Webhooks   ──┘
   status?: "backlog" | "open" | "in_progress" | "pr_review" | "complete";
 }
 ```
+
+**Validation:** At least one of `project_id` or `project_slug` is **required**. If neither is provided, return a clear validation error (e.g. `"project_id or project_slug is required"`).
 
 **Output**
 ```ts
@@ -120,13 +139,17 @@ Webhooks   ──┘
   title: string;
   description?: string;
   type: "feature" | "bug";
-  status?: "backlog" | "open"; // default backlog
+  // status is not accepted on create for MVP — always backlog
 }
 ```
 
 **Output:** Full ticket object (without comments/activity is fine).
 
-On success, write `activity_log` entry `ticket_created`.
+On success:
+- status is always **`backlog`**
+- write `activity_log` entry `ticket_created`
+
+Promote to `open` with `move_ticket` when ready for agents.
 
 ---
 
@@ -146,16 +169,31 @@ On success, write `activity_log` entry `ticket_created`.
 
 **Output:** Updated full ticket.
 
+**Caller:** authenticated user (session or API key owner). That user is `$user_id` for `assigned_to`.
+
 **Rules (enforced in service layer)**
-1. Ticket must exist and be in status `open` (product may also allow `backlog`).
-2. If already claimed by a different assignee → error `"Ticket already claimed"`.
-3. On success:
-   - set `assigned_to` (current user / service identity)
-   - set `claimed_at = now()`
-   - set `agent_name`, `agent_run_id`, `harness_name`
-   - set `status = in_progress`
-   - write activity_log `ticket_claimed`
-4. Same agent/run re-claim may be idempotent (return current ticket).
+1. Ticket must exist and be in status **`open`** only. Claim from `backlog` is not allowed.
+2. Use an **atomic conditional update** (required):
+
+```sql
+UPDATE tickets
+SET assigned_to = $user_id,
+    claimed_at = now(),
+    status = 'in_progress',
+    agent_name = $agent_name,
+    agent_run_id = $agent_run_id,
+    harness_name = $harness_name,
+    updated_at = now()
+WHERE id = $ticket_id
+  AND status = 'open'
+  AND assigned_to IS NULL
+RETURNING *;
+```
+
+3. If 0 rows and ticket is already `assigned_to = $user_id` with status `in_progress` → **idempotent success**: return current ticket, do **not** write another `ticket_claimed`.
+4. If 0 rows and assigned to another user → error `"Ticket already claimed"`.
+5. If 0 rows for any other reason (not open, missing, etc.) → error `"Ticket not claimable"` (or `"Ticket not found"`).
+6. On first successful claim: write activity_log `ticket_claimed`.
 
 ---
 
@@ -184,6 +222,8 @@ On success, write `activity_log` entry `ticket_created`.
 Write activity_log `ticket_updated` when meaningful fields change.  
 When PR fields are set, also write `pr_linked` if appropriate.
 
+**`merged_at`:** set only when reflecting an actual PR merge (e.g. `github_pr_state` becomes `merged`, or Phase 3 webhook). Do **not** set `merged_at` merely because status moved to `complete`.
+
 ---
 
 ### 6. `add_comment`
@@ -207,13 +247,13 @@ When PR fields are set, also write `pr_linked` if appropriate.
 }
 ```
 
-Optionally write activity_log `comment_added`.
+**Always** write activity_log `comment_added` (every comment).
 
 ---
 
 ### 7. `move_ticket`
 
-**Description:** Change ticket status.
+**Description:** Change ticket status (soft guardrails).
 
 **Input**
 ```ts
@@ -232,16 +272,26 @@ Optionally write activity_log `comment_added`.
 }
 ```
 
-Write activity_log `status_changed` with from/to in metadata.  
-When moving to `complete`, set `merged_at` if not already set (optional).
+**Rules (service layer)**
+1. Soft guardrails: most transitions are allowed for operator flexibility.
+2. **Reject** `open` → `in_progress` via `move_ticket`. Clients must use `claim_ticket`. Error e.g. `"Use claim_ticket to move open tickets to in_progress"`.
+3. When moving **to** `open` or `backlog` and the ticket was claimed (had `assigned_to` / `claimed_at`):
+   - clear `assigned_to`, `claimed_at`, `agent_name`, `agent_run_id`, `harness_name`
+   - leave `branch_name` as-is unless product later chooses to clear it
+   - write activity_log `ticket_unclaimed` (and `status_changed` as usual)
+4. Write activity_log `status_changed` with from/to in metadata.
+5. Moving to `complete` does **not** set `merged_at`. Set `merged_at` only when a PR is actually merged (update_ticket / webhook).
 
-MVP may allow any → any; tighten transitions later if desired.
+There is **no** separate `unclaim_ticket` tool — unclaim is move to open/backlog.
 
 ---
 
 ## Suggested Agent Workflow
 
 ```
+# Human or agent promotes work when ready:
+0. move_ticket({ ticket_id, status: "open" })   // from backlog
+
 1. list_tickets({ project_slug: "default", status: "open" })
 2. claim_ticket({ ticket_id, agent_name: "Grok Build", harness_name: "grok-build" })
 3. get_ticket({ ticket_id })
@@ -250,9 +300,12 @@ MVP may allow any → any; tighten transitions later if desired.
 6. // implement in agent + git
 7. update_ticket({ ticket_id, github_pr_url, github_pr_number, github_pr_state: "open" })
 8. move_ticket({ ticket_id, status: "pr_review" })
-9. // after merge
-10. move_ticket({ ticket_id, status: "complete" })
+9. // after merge (agent or Phase 3 webhook):
+10. update_ticket({ ticket_id, github_pr_state: "merged", merged_at: "<iso>", github_merge_commit_sha: "..." })
+11. move_ticket({ ticket_id, status: "complete" })
 ```
+
+If humans always promote backlog → open on the board, agents can start at step 1.
 
 ---
 
@@ -262,15 +315,18 @@ MVP may allow any → any; tighten transitions later if desired.
 |--------|------|---------|
 | GET | `/api/projects` | List projects |
 | GET | `/api/projects/[id]/tickets` | List tickets (`?status=`) |
-| POST | `/api/tickets` | Create ticket |
+| POST | `/api/tickets` | Create ticket (always backlog) |
 | GET | `/api/tickets/[id]` | Get ticket + comments + activity |
 | PATCH | `/api/tickets/[id]` | Update ticket |
 | POST | `/api/tickets/[id]/claim` | Claim ticket |
 | POST | `/api/tickets/[id]/comments` | Add comment |
 | POST | `/api/tickets/[id]/move` | Move ticket |
+| POST | `/api/api-keys` | Phase 2: create personal key |
+| GET | `/api/api-keys` | Phase 2: list own keys (prefix only) |
+| DELETE | `/api/api-keys/[id]` | Phase 2: revoke key |
 
 **Auth**
 - Browser: Supabase session.
-- MCP: `Authorization: Bearer <api_key>` validated server-side.
+- MCP: `Authorization: Bearer <api_key>` validated server-side → resolve `user_id`.
 
 All routes should call the same service functions used by MCP.

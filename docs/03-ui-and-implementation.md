@@ -1,6 +1,6 @@
 # AgentSmith — UI & Implementation Guidance
 
-**Version:** 1.1
+**Version:** 1.2
 
 ## Tech Stack (locked)
 
@@ -21,7 +21,7 @@ Do not introduce additional major dependencies unless clearly justified.
 API Routes / MCP  →  Services  →  Repositories  →  Database
 ```
 
-Claim rules, status transitions, and activity logging belong in **Services**.
+Claim rules, status transitions, claim-field clearing on move to open/backlog, and activity logging belong in **Services**.
 
 ---
 
@@ -34,13 +34,16 @@ app/
 ├── (app)/
 │   ├── layout.tsx
 │   ├── page.tsx
+│   ├── settings/
+│   │   └── api-keys/               # Phase 2
 │   └── projects/
 │       └── [slug]/
 │           ├── page.tsx              # Kanban board
 │           └── tickets/[id]/
 └── api/
     ├── projects/
-    └── tickets/
+    ├── tickets/
+    └── api-keys/                     # Phase 2
 components/
 ├── board/
 │   ├── KanbanBoard.tsx
@@ -74,20 +77,24 @@ lib/
 - Prominent **New Ticket** button.
 - Project switcher in header.
 
-### Ticket Detail
+### Ticket Detail (Phase 1)
 - Title + rendered markdown description.
 - Status + type badges.
-- Claim button (when `open`) and move controls.
+- **Claim** button only when status is `open` (calls claim service, not raw status update).
+- Move controls with soft guardrails:
+  - Do not offer / block `open` → `in_progress` without claim.
+  - Moving to Open or Backlog releases claim (service clears ownership fields).
 - Ownership block: assignee, agent_name, harness_name, claimed_at, branch_name.
-- GitHub PR block (url, number, state) when present.
-- Comments thread.
-- Activity timeline (from `activity_log`).
+- GitHub PR block (url, number, state, merged_at when present).
+- **Comments thread** (Phase 1).
+- **Activity timeline** from `activity_log` (Phase 1).
 - Edit description / checklist.
 
 ### Create Ticket
 - Modal or simple form: Title (required), Description, Type (Feature / Bug).
 - Defaults to current project.
-- On success → appears in `backlog` or `open`.
+- On success → always appears in **`backlog`**.
+- Operators promote with **Move to Open** when ready for agents (no separate “ready” control required).
 
 ### Design Notes
 - Clean dark or light theme (both if easy).
@@ -95,31 +102,36 @@ lib/
 - Loading and empty states required.
 - Mobile: basic responsiveness (horizontal scroll for board is fine).
 
+### Settings (Phase 2)
+- Create / list / revoke personal API keys for MCP.
+- Show key once on create; thereafter only prefix.
+- Short help: keys auth to AgentSmith (list/claim tickets), not GitHub.
+
 ---
 
 ## Implementation Order (strict)
 
 ### Phase 1 – Foundation
-1. Supabase project + schema from `01-database-schema.md`.
+1. Supabase project + schema from `01-database-schema.md` (tables needed for Phase 1; `api_keys` can wait).
 2. Next.js App Router + TypeScript + Tailwind + shadcn/ui.
-3. Supabase Auth (magic link + Google).
+3. Supabase Auth (magic link + Google); private / invite-only signup posture.
 4. Projects (with GitHub binding fields) + switcher.
-5. Tickets CRUD + **claim** service/action.
-6. Activity log writes on create / claim / status change.
-7. Basic Kanban board UI (5 columns).
-8. Thin service layer for ticket operations.
+5. **Service layer** for create / claim / move / activity (atomic claim; soft move guardrails; unclaim-via-move).
+6. Tickets CRUD + claim action wired through services.
+7. Activity log writes on create / claim / unclaim / status change / comment.
+8. Kanban board UI (5 columns).
+9. Ticket detail: comments + activity timeline + claim/move controls.
 
 ### Phase 2 – Agent Surface
 1. Harden API routes with Zod.
-2. MCP server with all tools including `claim_ticket`.
-3. API-key authentication for MCP.
-4. Comments + activity visible in detail view.
-5. Harness / agent fields visible on cards and detail.
-6. End-to-end test with Grok Build (or another agent).
+2. Personal API keys (schema + UI + Bearer validation).
+3. MCP server with all tools including `claim_ticket`.
+4. Harness / agent fields on cards if not already visible.
+5. End-to-end test with Grok Build (or another agent).
 
 ### Phase 3 – GitHub Automation
 1. PR metadata population.
-2. Webhooks (opened → pr_review, merged → complete, closed → open).
+2. Webhooks (opened → pr_review, merged → complete **and** set `merged_at`, closed without merge → open with claim cleared).
 3. Optional worktree / branch helpers.
 
 ---
@@ -143,4 +155,5 @@ lib/
 - Sub-tickets / epics.
 - Custom statuses.
 - Notifications / agent heartbeat.
-- Full membership RLS enforcement (table exists; policies can stay open for private MVP).
+- Full membership RLS enforcement (table exists; policies stay open for private MVP).
+- Separate unclaim tool (use move to open/backlog).
