@@ -37,6 +37,7 @@ Complete
 | `01-database-schema.md` | Supabase / Postgres schema + RLS + claim SQL |
 | `02-mcp-and-api.md` | MCP tool contracts + API routes (includes `claim_ticket`) |
 | `03-ui-and-implementation.md` | UI requirements, folder structure, build order |
+| `plans/` | Post-review remediation & hardening plans (work through in order) |
 
 ## How to use with Grok Build (or other agents)
 
