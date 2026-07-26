@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTicket } from "@/lib/services/tickets";
 import { getProjectBySlug } from "@/lib/services/projects";
 import { TicketDetail } from "@/components/board/TicketDetail";
+import { PillNav } from "@/components/PillNav";
 import { ServiceError } from "@/lib/types";
 
 export default async function TicketPage({
@@ -16,7 +17,12 @@ export default async function TicketPage({
   try {
     await getProjectBySlug(supabase, slug);
     const ticket = await getTicket(supabase, id);
-    return <TicketDetail ticket={ticket} projectSlug={slug} />;
+    return (
+      <>
+        <TicketDetail ticket={ticket} projectSlug={slug} />
+        <PillNav projectSlug={slug} />
+      </>
+    );
   } catch (e) {
     if (e instanceof ServiceError && e.status === 404) notFound();
     throw e;
