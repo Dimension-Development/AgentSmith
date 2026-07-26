@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listProjects } from "@/lib/services/projects";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
 import { SignOutButton } from "@/components/SignOutButton";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 
 export default async function AppLayout({
   children,
@@ -30,6 +31,7 @@ export default async function AppLayout({
             {projects.length > 0 && (
               <ProjectSwitcher projects={projects} />
             )}
+            <CreateProjectDialog />
           </div>
           <div className="flex items-center gap-3 text-sm text-zinc-500">
             <Link

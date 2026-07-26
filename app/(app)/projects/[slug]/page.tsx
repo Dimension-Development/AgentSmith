@@ -6,6 +6,7 @@ import { KanbanBoard } from "@/components/board/KanbanBoard";
 import { BoardRealtime } from "@/components/board/BoardRealtime";
 import { CreateTicketDialog } from "@/components/board/CreateTicketDialog";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
+import { ProjectSettingsDialog } from "@/components/projects/ProjectSettingsDialog";
 import { ServiceError } from "@/lib/types";
 
 export default async function ProjectBoardPage({
@@ -36,11 +37,16 @@ export default async function ProjectBoardPage({
           <div className="flex items-center gap-3 sm:hidden">
             <ProjectSwitcher projects={projects} currentSlug={slug} />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">{project.name}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-xl font-semibold tracking-tight">
+              {project.name}
+            </h1>
+            <ProjectSettingsDialog project={project} />
+          </div>
           <p className="text-sm text-zinc-500">
             {project.github_owner && project.github_repo
-              ? `${project.github_owner}/${project.github_repo}`
-              : "No GitHub binding yet"}
+              ? `${project.github_owner}/${project.github_repo} (${project.default_branch})`
+              : "No GitHub binding yet — set one in project settings"}
             {project.description ? ` · ${project.description}` : null}
           </p>
         </div>
