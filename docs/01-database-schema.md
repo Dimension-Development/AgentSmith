@@ -1,6 +1,6 @@
 # AgentSmith — Database Schema (Supabase / Postgres)
 
-**Version:** 1.1  
+**Version:** 1.2  
 This is the canonical schema for the MVP. Implement exactly as specified unless a clear improvement is needed.
 
 ## Enums
@@ -84,6 +84,7 @@ create table public.tickets (
   status public.ticket_status not null default 'backlog',
 
   -- Ownership / claim
+  -- assigned_to = human user who owns the claim (API key owner when claimed via MCP)
   assigned_to uuid references auth.users(id) on delete set null,
   claimed_at timestamptz,
   agent_name text,
@@ -92,6 +93,7 @@ create table public.tickets (
   branch_name text,
 
   -- GitHub PR metadata
+  -- merged_at is set only when a PR is actually merged (not merely when status = complete)
   github_pr_number integer,
   github_pr_url text,
   github_pr_state text, -- open | closed | merged
@@ -147,6 +149,29 @@ create index activity_log_project_id_created_at_idx
   on public.activity_log (project_id, created_at desc);
 ```
 
+### api_keys (Phase 2)
+
+Personal MCP keys. Not required for Phase 1 schema apply, but define before shipping MCP.
+
+```sql
+-- Phase 2
+create table public.api_keys (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  key_prefix text not null,          -- e.g. first 8 chars for display
+  key_hash text not null,            -- store hash only; never store raw key
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  last_used_at timestamptz
+);
+
+create index api_keys_user_id_idx on public.api_keys (user_id);
+create index api_keys_key_hash_idx on public.api_keys (key_hash);
+```
+
+Keys are **user-owned** and act as that user for all projects (open RLS among authenticated users). They authenticate to AgentSmith API/MCP — not to GitHub.
+
 ## Triggers
 
 ```sql
@@ -164,6 +189,28 @@ create trigger tickets_set_updated_at
   execute function public.set_updated_at();
 ```
 
+## Claim concurrency (service layer)
+
+Do **not** implement claim as read-then-update in application code alone. The service layer must use an atomic conditional update so two agents cannot both claim the same open ticket:
+
+```sql
+UPDATE public.tickets
+SET assigned_to = $user_id,
+    claimed_at = now(),
+    status = 'in_progress',
+    agent_name = $agent_name,
+    agent_run_id = $agent_run_id,
+    harness_name = $harness_name
+WHERE id = $ticket_id
+  AND status = 'open'
+  AND assigned_to IS NULL
+RETURNING *;
+```
+
+Idempotent path and error messages: see PRD §8 and `02-mcp-and-api.md`.
+
+Moving to `open` or `backlog` must clear claim/agent fields and write `ticket_unclaimed` when applicable (service layer).
+
 ## Row Level Security (MVP – private deployment)
 
 ```sql
@@ -172,8 +219,10 @@ alter table public.project_members enable row level security;
 alter table public.tickets enable row level security;
 alter table public.comments enable row level security;
 alter table public.activity_log enable row level security;
+-- Phase 2: alter table public.api_keys enable row level security;
 
 -- MVP: all authenticated users can manage everything.
+-- Private / invite-only deploy only — disable public self-signup in production.
 -- Tighten later using project_members.role.
 
 create policy "Authenticated users can manage projects"
@@ -195,9 +244,14 @@ create policy "Authenticated users can manage comments"
 create policy "Authenticated users can manage activity_log"
   on public.activity_log for all to authenticated
   using (true) with check (true);
+
+-- Phase 2 example:
+-- create policy "Users manage own api_keys"
+--   on public.api_keys for all to authenticated
+--   using (user_id = auth.uid()) with check (user_id = auth.uid());
 ```
 
-**Note:** Prefer routing MCP through Next.js API + service layer rather than giving agents the `service_role` key.
+**Note:** Prefer routing MCP through Next.js API + service layer rather than giving agents the `service_role` key. MCP uses personal API keys validated server-side; the service then acts as the key's `user_id`.
 
 ## Seed data (optional)
 
