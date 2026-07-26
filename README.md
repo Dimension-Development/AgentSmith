@@ -75,6 +75,8 @@ npm run db:reset                    # reapply all migrations locally
 
 ## Docs
 
+- **[AGENTS.md](./AGENTS.md)** — instructions for coding agents (repo map, claim rules, MCP, conventions)
+
 See [docs/](./docs/) for the full Product Requirements Document and implementation specs:
 
 - [PRD.md](./docs/PRD.md) — master requirements (v1.2)
