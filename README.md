@@ -2,15 +2,31 @@
 
 Lightweight, agent-first Kanban board for small teams shipping with AI coding agents.
 
-Non-technical stakeholders create tickets. Developers pull them into coding agents (Grok Build, Claude Code, Cursor, etc.) via MCP, scope the work, and move tickets through a simple pipeline ending in a reviewed & merged PR.
+> The agent-native change request queue that turns stakeholder requests into reviewed pull requests.
+
+Non-technical stakeholders create tickets. Developers and coding agents **claim** them, implement in tools like Grok Build, Claude Code, or Cursor, open a PR, and move work to complete.
+
+## Systems of record
+
+| Concern | System |
+|---------|--------|
+| Work state | **AgentSmith** |
+| Code | **GitHub** |
+| Execution | Coding agents |
+
+## Workflow
+
+```
+Stakeholder → Backlog → Open → Claim → In Progress → PR Review → Complete
+```
 
 ## Docs
 
-See the [docs/](./docs/) folder for the full Product Requirements Document and implementation specs:
+See [docs/](./docs/) for the full Product Requirements Document and implementation specs:
 
-- [PRD.md](./docs/PRD.md) — master requirements
+- [PRD.md](./docs/PRD.md) — master requirements (v1.1)
 - [01-database-schema.md](./docs/01-database-schema.md) — Supabase schema
-- [02-mcp-and-api.md](./docs/02-mcp-and-api.md) — MCP tools & API
+- [02-mcp-and-api.md](./docs/02-mcp-and-api.md) — MCP tools & API (includes claim)
 - [03-ui-and-implementation.md](./docs/03-ui-and-implementation.md) — UI & build order
 
 ## Stack (planned)
@@ -23,4 +39,4 @@ See the [docs/](./docs/) folder for the full Product Requirements Document and i
 
 ## Status
 
-PRD complete. Implementation starting with Phase 1.
+PRD v1.1 complete. Ready for Phase 1 implementation.
