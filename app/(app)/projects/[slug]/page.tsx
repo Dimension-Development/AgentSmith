@@ -30,27 +30,48 @@ export default async function ProjectBoardPage({
     listProjects(supabase),
   ]);
 
+  const openCount = tickets.filter((t) => t.status === "open").length;
+  const claimedCount = tickets.filter(
+    (t) => t.status === "in_progress" && t.assigned_to
+  ).length;
+  const shippedCount = tickets.filter((t) => t.status === "complete").length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3 sm:hidden">
-            <ProjectSwitcher projects={projects} currentSlug={slug} />
+    <div className="space-y-8">
+      <div className="relative">
+        {/* One sphere per screen (olive default) */}
+        <div className="sphere pointer-events-none absolute -top-16 right-24 hidden h-48 w-48 opacity-60 lg:block" />
+        <div className="relative flex flex-wrap items-end justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 sm:hidden">
+              <ProjectSwitcher projects={projects} currentSlug={slug} />
+            </div>
+            <div className="flex items-end gap-2">
+              <h1 className="display text-[clamp(56px,8vw,110px)]">
+                {project.name}
+              </h1>
+              <span className="pb-3">
+                <ProjectSettingsDialog project={project} />
+              </span>
+            </div>
+            <p className="micro text-mute">
+              {project.github_owner && project.github_repo
+                ? `${project.github_owner}/${project.github_repo} · branch ${project.default_branch}`
+                : "No GitHub binding — set one in project settings"}
+              {project.description ? ` · ${project.description}` : null}
+            </p>
           </div>
-          <div className="flex items-center gap-1">
-            <h1 className="text-xl font-semibold tracking-tight">
-              {project.name}
-            </h1>
-            <ProjectSettingsDialog project={project} />
+          <div className="flex items-start gap-5 pb-2">
+            <span className="micro text-right leading-[1.7] text-mute">
+              {openCount} open
+              <br />
+              {claimedCount} claimed
+              <br />
+              {shippedCount} shipped
+            </span>
+            <CreateTicketDialog projectId={project.id} />
           </div>
-          <p className="text-sm text-zinc-500">
-            {project.github_owner && project.github_repo
-              ? `${project.github_owner}/${project.github_repo} (${project.default_branch})`
-              : "No GitHub binding yet — set one in project settings"}
-            {project.description ? ` · ${project.description}` : null}
-          </p>
         </div>
-        <CreateTicketDialog projectId={project.id} />
       </div>
 
       <KanbanBoard tickets={tickets} projectSlug={project.slug} />

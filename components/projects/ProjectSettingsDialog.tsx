@@ -63,7 +63,7 @@ export function ProjectSettingsDialog({ project }: { project: Project }) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-zinc-500"
+          className="h-7 px-2 text-mute"
           aria-label="Project settings"
         >
           <Settings2 className="h-4 w-4" />
@@ -128,7 +128,7 @@ export function ProjectSettingsDialog({ project }: { project: Project }) {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="micro text-alarm">{error}</p>
           )}
           <div className="flex justify-end gap-2">
             <Button

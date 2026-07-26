@@ -112,7 +112,7 @@ export function CreateTicketDialog({ projectId }: { projectId: string }) {
             </div>
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="micro text-alarm">{error}</p>
           )}
           <div className="flex justify-end gap-2">
             <Button

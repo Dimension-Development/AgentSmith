@@ -67,7 +67,7 @@ export function ApiKeysSettings() {
     <div className="space-y-8">
       <form
         onSubmit={createKey}
-        className="space-y-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+        className="space-y-4 border border-line bg-panel p-5"
       >
         <div className="space-y-2">
           <Label htmlFor="key-name">Key name</Label>
@@ -86,11 +86,11 @@ export function ApiKeysSettings() {
       </form>
 
       {newKey && (
-        <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        <div className="space-y-3 border border-[rgba(240,180,92,.5)] bg-[rgba(240,180,92,.08)] p-5">
+          <p className="micro text-amber">
             Copy this key now — it won’t be shown again.
           </p>
-          <code className="block break-all rounded bg-white px-3 py-2 text-xs dark:bg-zinc-950">
+          <code className="block break-all border border-line bg-ink px-3 py-2 font-mono text-xs text-bone">
             {newKey}
           </code>
           <Button
@@ -105,27 +105,27 @@ export function ApiKeysSettings() {
       )}
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="micro text-alarm">{error}</p>
       )}
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Your keys</h2>
+        <h2 className="micro text-mute">Your keys</h2>
         {keys.length === 0 ? (
-          <p className="text-sm text-zinc-400">No keys yet.</p>
+          <p className="text-sm text-mute-dim">No keys yet.</p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <ul className="divide-y divide-line border border-line bg-panel">
             {keys.map((k) => (
               <li
                 key={k.id}
                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
               >
                 <div className="min-w-0 space-y-0.5">
-                  <p className="text-sm font-medium">{k.name}</p>
-                  <p className="font-mono text-xs text-zinc-500">
+                  <p className="text-[17px] font-light text-bone">{k.name}</p>
+                  <p className="micro text-mute">
                     {k.key_prefix}…
                     {k.revoked_at ? " · revoked" : ""}
                   </p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="micro text-mute-dim">
                     Created {formatRelativeTime(k.created_at)}
                     {k.last_used_at
                       ? ` · last used ${formatRelativeTime(k.last_used_at)}`
@@ -148,11 +148,11 @@ export function ApiKeysSettings() {
         )}
       </div>
 
-      <div className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        <p className="font-medium text-zinc-800 dark:text-zinc-200">
+      <div className="border border-line bg-panel p-5 text-sm text-mute">
+        <p className="micro text-bone">
           MCP config (Claude Code / Cursor)
         </p>
-        <pre className="mt-2 overflow-x-auto rounded bg-zinc-50 p-3 text-xs dark:bg-zinc-900">
+        <pre className="mt-3 overflow-x-auto border border-line bg-ink p-3 font-mono text-xs text-bone-dim">
 {`{
   "mcpServers": {
     "agentsmith": {

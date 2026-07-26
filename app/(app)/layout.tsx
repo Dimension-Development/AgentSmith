@@ -19,29 +19,29 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-4 px-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
-            >
-              AgentSmith
+      <header className="border-b border-line">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-5">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="micro flex items-center gap-3 text-bone">
+              <span className="grid h-[26px] w-[26px] place-items-center rounded-full border border-[rgba(236,233,216,.5)]">
+                A
+              </span>
+              <span className="tracking-[.16em]">AgentSmith</span>
             </Link>
             {projects.length > 0 && (
-              <ProjectSwitcher projects={projects} />
+              <>
+                <span className="micro text-mute-dim">/</span>
+                <ProjectSwitcher projects={projects} />
+              </>
             )}
             <CreateProjectDialog />
           </div>
-          <div className="flex items-center gap-3 text-sm text-zinc-500">
-            <Link
-              href="/settings/api-keys"
-              className="hover:text-zinc-800 dark:hover:text-zinc-200"
-            >
+          <div className="micro flex items-center gap-4 text-mute">
+            <Link href="/settings/api-keys" className="hover:text-bone">
               API keys
             </Link>
             {user?.email && (
-              <span className="hidden sm:inline truncate max-w-[200px]">
+              <span className="hidden max-w-[220px] truncate normal-case sm:inline">
                 {user.email}
               </span>
             )}
@@ -49,7 +49,7 @@ export default async function AppLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[1400px] px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-[1400px] px-5 py-8">{children}</main>
     </div>
   );
 }

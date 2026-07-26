@@ -1,28 +1,118 @@
 @import "tailwindcss";
 
+/*
+ * Phantom theme (from the Claude Design "AgentSmith UI" restyle).
+ * Dark-only: warm-dark olive field, bone text, mono micro-labels.
+ * Tokens mirror design-system/foundations/colors-and-type.html.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  --ink: #101208;
+  --field: #16180f;
+  --panel: rgba(236, 233, 216, 0.03);
+  --line: rgba(236, 233, 216, 0.14);
+  --line-strong: rgba(236, 233, 216, 0.3);
+  --bone: #f2efdc;
+  --bone-dim: rgba(242, 239, 220, 0.8);
+  --mute: #8b8d76;
+  --mute-dim: #6f7159;
+  --lime: #a8e05a;
+  --olive: #c6d68a;
+  --amber: #f0b45c;
+  --teal: #4fcbb0;
+  --alarm: #e2724a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-field: var(--field);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-bone: var(--bone);
+  --color-bone-dim: var(--bone-dim);
+  --color-mute: var(--mute);
+  --color-mute-dim: var(--mute-dim);
+  --color-lime: var(--lime);
+  --color-olive: var(--olive);
+  --color-amber: var(--amber);
+  --color-teal: var(--teal);
+  --color-alarm: var(--alarm);
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-  }
+html {
+  background: var(--ink);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  min-height: 100vh;
+  background: radial-gradient(
+    120% 90% at 50% 130%,
+    #3c4914 0%,
+    #232a10 34%,
+    #15170e 66%,
+    var(--ink) 100%
+  );
+  background-attachment: fixed;
+  color: var(--bone);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Mono micro-label — every label, ID, status, and meta line. */
+.micro {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Archivo display heading. */
+.display {
+  font-weight: 200;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+/* One gradient sphere per screen (olive default). */
+.sphere {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 22%,
+    #f0f2cd,
+    #d8e0a2 18%,
+    #9aad57 44%,
+    #4d5c14 70%,
+    #21280b
+  );
+}
+
+/* Pulsing lime dot — live agent state. */
+.agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  animation: as-pulse 2s ease-in-out infinite;
+}
+@keyframes as-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(168, 224, 90, 0.45);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 6px rgba(168, 224, 90, 0);
+  }
 }
 
 .prose p {
@@ -44,13 +134,6 @@ body {
 .prose code {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.875em;
-  background: rgb(244 244 245);
+  background: rgba(236, 233, 216, 0.08);
   padding: 0.1em 0.3em;
-  border-radius: 0.25rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .prose code {
-    background: rgb(39 39 42);
-  }
 }

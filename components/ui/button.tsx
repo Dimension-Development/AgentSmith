@@ -3,24 +3,29 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/*
+ * Phantom buttons: default/secondary are rounded pills in Archivo;
+ * outline/ghost/destructive are square mono uppercase controls.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-line-strong disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        default: "bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200",
+        default: "rounded-full bg-[#f4f2e4] text-[#14150f] hover:bg-white",
         secondary:
-          "bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700",
+          "rounded-full bg-[rgba(236,233,216,.1)] text-bone hover:bg-[rgba(236,233,216,.18)]",
         outline:
-          "border border-zinc-200 bg-transparent hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800",
-        ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
+          "micro rounded-none border-line-strong bg-transparent text-bone hover:border-bone hover:bg-[rgba(236,233,216,.08)]",
+        ghost: "micro rounded-none bg-transparent text-mute hover:text-bone",
+        destructive:
+          "micro rounded-none border-[rgba(226,114,74,.55)] bg-transparent text-alarm hover:border-alarm hover:bg-[rgba(226,114,74,.12)]",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-6",
-        icon: "h-9 w-9",
+        default: "h-11 px-6 text-base",
+        sm: "h-9 px-4 text-sm",
+        lg: "h-13 px-8 text-[17px]",
+        icon: "h-11 w-11 px-0",
       },
     },
     defaultVariants: {

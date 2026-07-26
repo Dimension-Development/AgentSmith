@@ -128,9 +128,9 @@ export function CreateProjectDialog({
               placeholder="my-app"
               title="Lowercase letters, numbers, and hyphens"
             />
-            <p className="text-xs text-zinc-500">
+            <p className="micro text-mute-dim normal-case">
               Used in URLs and by agents (e.g.{" "}
-              <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
+              <code className="bg-[rgba(236,233,216,.08)] px-1">
                 list_tickets project_slug
               </code>
               ).
@@ -179,7 +179,7 @@ export function CreateProjectDialog({
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="micro text-alarm">{error}</p>
           )}
           <div className="flex justify-end gap-2">
             <Button
