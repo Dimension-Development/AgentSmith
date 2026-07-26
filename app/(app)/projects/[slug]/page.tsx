@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjects } from "@/lib/services/projects";
 import { listTickets } from "@/lib/services/tickets";
 import { KanbanBoard } from "@/components/board/KanbanBoard";
+import { BoardRealtime } from "@/components/board/BoardRealtime";
 import { CreateTicketDialog } from "@/components/board/CreateTicketDialog";
 import { ProjectSwitcher } from "@/components/ProjectSwitcher";
 import { ServiceError } from "@/lib/types";
@@ -47,6 +48,7 @@ export default async function ProjectBoardPage({
       </div>
 
       <KanbanBoard tickets={tickets} projectSlug={project.slug} />
+      <BoardRealtime projectId={project.id} />
     </div>
   );
 }

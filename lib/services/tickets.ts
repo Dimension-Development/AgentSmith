@@ -59,12 +59,18 @@ async function requireUserId(
   return user.id;
 }
 
+export const LIST_TICKETS_DEFAULT_LIMIT = 100;
+export const GET_TICKET_COMMENT_LIMIT = 100;
+
 export async function listTickets(
   supabase: SupabaseClient,
   opts: {
     project_id?: string;
     project_slug?: string;
     status?: TicketStatus;
+    limit?: number;
+    /** Cursor: only tickets created strictly before this ISO timestamp. */
+    before?: string;
   }
 ): Promise<Ticket[]> {
   if (!opts.project_id && !opts.project_slug) {
@@ -82,10 +88,14 @@ export async function listTickets(
     .select("*, comments(count)")
     // created_at keeps card order stable; updated_at would reshuffle on every touch
     .eq("project_id", projectId!)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? LIST_TICKETS_DEFAULT_LIMIT);
 
   if (opts.status) {
     query = query.eq("status", opts.status);
+  }
+  if (opts.before) {
+    query = query.lt("created_at", opts.before);
   }
 
   const { data, error } = await query;
@@ -123,11 +133,13 @@ export async function getTicket(
     throw new ServiceError("Ticket not found", 404);
   }
 
+  // Latest N comments, returned oldest-first for display.
   const { data: comments, error: commentsError } = await supabase
     .from("comments")
     .select("*")
     .eq("ticket_id", ticketId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(GET_TICKET_COMMENT_LIMIT);
 
   if (commentsError) {
     throw new ServiceError(commentsError.message, 500);
@@ -137,7 +149,7 @@ export async function getTicket(
 
   return {
     ...mapTicket(data as Record<string, unknown>),
-    comments: (comments ?? []) as Comment[],
+    comments: ((comments ?? []) as Comment[]).reverse(),
     activity,
   };
 }

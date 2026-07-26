@@ -94,7 +94,12 @@ See [docs/](./docs/) for the full Product Requirements Document and implementati
 ## MCP (agents)
 
 1. Create a personal key under **API keys** in the app (`/settings/api-keys`).
-2. Point your agent at the stdio MCP server — see [docs/mcp.md](./docs/mcp.md).
+2. Connect — see [docs/mcp.md](./docs/mcp.md) for both options:
+
+**HTTP (recommended, zero install):** point any MCP client at
+`http://127.0.0.1:3000/api/mcp` with `Authorization: Bearer asm_…`.
+
+**stdio bridge (local/offline):**
 
 ```bash
 export AGENTSMITH_API_URL=http://127.0.0.1:3000

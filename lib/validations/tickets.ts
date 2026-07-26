@@ -65,12 +65,17 @@ export const addCommentSchema = z.object({
   is_system: z.boolean().optional().default(false),
 });
 
-export const listTicketsSchema = z
-  .object({
-    project_id: z.string().uuid().optional(),
-    project_slug: z.string().min(1).optional(),
-    status: z.enum(TICKET_STATUSES).optional(),
-  })
-  .refine((data) => data.project_id || data.project_slug, {
-    message: "project_id or project_slug is required",
-  });
+/** Base object (no refine) so MCP tool schemas can reuse `.shape`. */
+export const listTicketsBaseSchema = z.object({
+  project_id: z.string().uuid().optional(),
+  project_slug: z.string().min(1).optional(),
+  status: z.enum(TICKET_STATUSES).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  /** Cursor: return tickets created strictly before this ISO timestamp. */
+  before: z.string().datetime({ offset: true }).optional(),
+});
+
+export const listTicketsSchema = listTicketsBaseSchema.refine(
+  (data) => data.project_id || data.project_slug,
+  { message: "project_id or project_slug is required" }
+);
